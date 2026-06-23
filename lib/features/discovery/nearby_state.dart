@@ -2,6 +2,7 @@ enum ConnectionStatus {
   idle, 
   discovering,   // Sender is scanning for devices
   advertising,   // Receiver is waiting to be found
+  waiting,
   connecting,    // Devices are shaking hands
   connected,     // Handshake successful, ready to send files
   transferring,  // Active file transfer in progress
@@ -13,12 +14,15 @@ class NearbyState {
   final Map<String, String> discoveredPeers; 
   final String? connectedEndpointId;
   final double transferProgress;
-
+  final String? pendingEndpointId;
+  final String? pendingEndpointName;
   NearbyState({
     this.status = ConnectionStatus.idle,
     this.discoveredPeers = const {},
     this.connectedEndpointId,
     this.transferProgress = 0.0,
+    this.pendingEndpointId,
+    this.pendingEndpointName,
   });
 
   NearbyState copyWith({
@@ -26,12 +30,16 @@ class NearbyState {
     Map<String, String>? discoveredPeers,
     String? connectedEndpointId,
     double? transferProgress,
+    String? pendingEndpointId,
+    String? pendingEndpointName,
   }) {
     return NearbyState(
       status: status ?? this.status,
       discoveredPeers: discoveredPeers ?? this.discoveredPeers,
       connectedEndpointId: connectedEndpointId ?? this.connectedEndpointId,
       transferProgress: transferProgress ?? this.transferProgress,
+      pendingEndpointId: pendingEndpointId ?? this.pendingEndpointId,
+      pendingEndpointName: pendingEndpointName ?? this.pendingEndpointName,
     );
   }
 }

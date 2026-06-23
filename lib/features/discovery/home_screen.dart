@@ -114,7 +114,7 @@ class HomeScreen extends ConsumerWidget {
                       onPressed: () async {
                         bool granted = await PermissionService.requestPermissions();
                         if (granted) {
-                          controller.startAdvertising("BhejDe_Receiver");
+                          controller.startAdvertising();
                         } else {
                           if(context.mounted){
                             ScaffoldMessenger.of(context).showSnackBar(

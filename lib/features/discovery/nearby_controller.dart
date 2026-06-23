@@ -21,12 +21,14 @@ class NearbyController extends StateNotifier<NearbyState> {
         username,
         strategy,
         onEndpointFound: (id, name, serviceId) {
-          state.discoveredPeers[id] = name;
-          state = state.copyWith(discoveredPeers: state.discoveredPeers);
+          final updatedPeers = Map<String, String>.from(state.discoveredPeers);
+          updatedPeers[id] = name;
+          state = state.copyWith(discoveredPeers: updatedPeers);
         },
         onEndpointLost: (id) {
-          state.discoveredPeers.remove(id);
-          state = state.copyWith(discoveredPeers: state.discoveredPeers);
+          final updatedPeers = Map<String, String>.from(state.discoveredPeers);
+          updatedPeers.remove(id);
+          state = state.copyWith(discoveredPeers: updatedPeers);
         },
       );
     } catch (e) {
@@ -43,7 +45,11 @@ class NearbyController extends StateNotifier<NearbyState> {
         strategy,
         onConnectionInitiated: (id, name) {
           
-          //TODO: Write the handshake logic
+          state = state.copyWith(
+            pendingEndpointId: id,
+            pendingEndpointName: name.endpointName,
+            status: ConnectionStatus.waiting,
+          );
         },
         onConnectionResult: (id, status) {
           if (status == Status.CONNECTED) {
@@ -60,4 +66,81 @@ class NearbyController extends StateNotifier<NearbyState> {
       state = state.copyWith(status: ConnectionStatus.error);
     }
    }
+
+   Future<void> acceptConnection() async {
+    if (state.pendingEndpointId != null) {
+      try{
+      await Nearby().acceptConnection(
+        state.pendingEndpointId!,
+        onPayLoadRecieved: (endid, payload) {
+          // Handle received payload
+        },
+        onPayloadTransferUpdate: (endid, update) {
+          // Handle payload transfer updates
+        },
+      );
+      } catch (e) {
+        state = state.copyWith(status: ConnectionStatus.error, pendingEndpointId: null, pendingEndpointName: null);
+      }
+    }
+   }
+
+   Future<void> rejectConnection() async {
+    if (state.pendingEndpointId != null) {
+      try{
+      await Nearby().rejectConnection(state.pendingEndpointId!);
+      state = state.copyWith(pendingEndpointId: null, pendingEndpointName: null, status: ConnectionStatus.advertising);
+      } catch (e) {
+        state = state.copyWith(status: ConnectionStatus.error, pendingEndpointId: null, pendingEndpointName: null);
+      }
+    }
+   }
+
+   Future<void> initiateConnection(String endpointId) async {
+    String username = "BhejDe_Sender";      //TODO: Add the take username and pass it here
+    try {
+      await Nearby().requestConnection(
+        username,
+        endpointId,
+        onConnectionInitiated: (id, name) {
+          Nearby().acceptConnection(
+            id,
+            onPayLoadRecieved: (endid, payload) {
+              // Handle received payload
+            },
+            onPayloadTransferUpdate: (endid, update) {
+              // Handle payload transfer updates
+            },
+          );
+        },
+        onConnectionResult: (id, status) {
+          if (status == Status.CONNECTED) {
+            state = state.copyWith(status: ConnectionStatus.connected);
+          } else {
+            state = state.copyWith(status: ConnectionStatus.idle);
+          }
+        },
+        onDisconnected: (id) {
+          state = state.copyWith(connectedEndpointId: null, status: ConnectionStatus.idle);
+        },
+      );
+    } catch (e) {
+      state = state.copyWith(status: ConnectionStatus.error);
+    }
+   }
+
+  Future<void> stopAll() async {
+    await Nearby().stopAdvertising();
+    await Nearby().stopDiscovery();
+  }
+
+  @override
+  void dispose() {
+    Nearby().stopAdvertising();
+    Nearby().stopDiscovery();
+    Nearby().stopAllEndpoints();
+    super.dispose();
+  }
+
+  
 }
