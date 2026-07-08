@@ -19,6 +19,19 @@ class HomeScreen extends ConsumerWidget {
     // 2. THE HANDS: We grab the controller so we can press the buttons (start/stop).
     final controller = ref.read(nearbyControllerProvider.notifier);
 
+    ref.listen<NearbyState>(nearbyControllerProvider, (previous, next) {
+      if (previous?.status != ConnectionStatus.connected && 
+          next.status == ConnectionStatus.connected) {
+            
+        // Trigger the screen transition!
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => TransferScreen(),
+          ),
+        );
+    }
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -58,8 +71,8 @@ class HomeScreen extends ConsumerWidget {
                           title: Text(deviceName),
                           subtitle: const Text("Tap to connect"),
                           onTap: () {
-                            // We will write the handshake logic later
-                            print("Wants to connect to $endpointId");
+                            
+                           controller.initiateConnection(endpointId);
                           },
                         );
                       },
@@ -71,7 +84,36 @@ class HomeScreen extends ConsumerWidget {
                 const CircularProgressIndicator(color: Colors.green),
                 const SizedBox(height: 20),
                 const Text("Waiting for sender to connect...", style: TextStyle(fontSize: 18)),
+              ]
+              
+              else if (state.status == ConnectionStatus.waiting) ...[
+                const CircularProgressIndicator(color: Colors.orange),
+                const SizedBox(height: 20),
+                Text("Incoming connection from ${state.pendingEndpointName}...", style: const TextStyle(fontSize: 18)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        controller.acceptConnection();
+                      },
+                      child: const Text("Accept"),
+                    ),
+                    const SizedBox(width: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        controller.rejectConnection();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text("Reject"),
+                    ),
+                  ],
+                ),
               ],
+
 
               const Spacer(),
 
@@ -141,6 +183,22 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class TransferScreen extends StatelessWidget {
+  const TransferScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Transferring Files"),
+      ),
+      body: const Center(
+        child: Text("File transfer in progress..."),
       ),
     );
   }

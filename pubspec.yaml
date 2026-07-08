@@ -39,6 +39,7 @@ dependencies:
   flutter_riverpod: ^3.3.2
   nearby_connections: ^4.3.0
   device_name: ^0.0.4
+  file_picker: ^3.0.4
   
 
 dev_dependencies:

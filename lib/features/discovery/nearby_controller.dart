@@ -1,5 +1,4 @@
 import 'package:bhejde/features/discovery/nearby_state.dart';
-import 'package:device_name/device_name.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
@@ -97,7 +96,7 @@ class NearbyController extends StateNotifier<NearbyState> {
    }
 
    Future<void> initiateConnection(String endpointId) async {
-    String username = "BhejDe_Sender";      //TODO: Add the take username and pass it here
+    String username = "BhejDe_Sender";      
     try {
       await Nearby().requestConnection(
         username,
@@ -132,6 +131,7 @@ class NearbyController extends StateNotifier<NearbyState> {
   Future<void> stopAll() async {
     await Nearby().stopAdvertising();
     await Nearby().stopDiscovery();
+    state = state.copyWith(status: ConnectionStatus.idle, discoveredPeers: {});
   }
 
   @override
