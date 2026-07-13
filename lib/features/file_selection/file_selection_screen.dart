@@ -1,3 +1,4 @@
+import 'package:bhejde/features/file_selection/apps_tab.dart';
 import 'package:bhejde/features/file_selection/selection_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,7 +27,11 @@ class FileSelectionScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            
+            AppsTab(),
+            Placeholder(), // Placeholder for Photos
+            Placeholder(), // Placeholder for Videos  
+            Placeholder(), // Placeholder for Documents
+            Placeholder(), // Placeholder for Files
           ],
         ),
         floatingActionButton: selectedFiles.isNotEmpty

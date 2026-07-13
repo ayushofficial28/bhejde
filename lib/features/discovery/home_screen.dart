@@ -1,3 +1,4 @@
+import 'package:bhejde/features/file_selection/file_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -133,16 +134,21 @@ class HomeScreen extends ConsumerWidget {
                       icon: const Icon(Icons.arrow_upward),
                       label: const Text("SEND"),
                       onPressed: () async {
-                        bool granted = await PermissionService.requestPermissions();
-                        if (granted) {
-                          controller.startDiscovery();
-                        } else {
-                          if(context.mounted){
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Permissions required to scan!')),
-                            );
-                          }
-                        }
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const FileSelectionScreen(),
+                          ),
+                        );
+                        // bool granted = await PermissionService.requestPermissions();
+                        // if (granted) {
+                        //   controller.startDiscovery();
+                        // } else {
+                        //   if(context.mounted){
+                        //     ScaffoldMessenger.of(context).showSnackBar(
+                        //       const SnackBar(content: Text('Permissions required to scan!')),
+                        //     );
+                        //   }
+                        // }
                       },
                     ),
 
