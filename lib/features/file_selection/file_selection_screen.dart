@@ -15,6 +15,7 @@ class FileSelectionScreen extends ConsumerWidget {
         appBar: AppBar(
           title: const Text('Select Files to Share'),
           bottom: const TabBar(
+            tabAlignment: TabAlignment.center,
             isScrollable: true,
             tabs: [
               Tab(text: 'Apps'),
