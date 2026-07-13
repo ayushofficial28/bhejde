@@ -40,6 +40,8 @@ dependencies:
   nearby_connections: ^4.3.0
   device_name: ^0.0.4
   file_picker: ^3.0.4
+  flutter_device_apps: ^0.8.1
+
   
 
 dev_dependencies:
