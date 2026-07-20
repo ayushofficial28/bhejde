@@ -41,6 +41,7 @@ dependencies:
   flutter_device_apps: ^0.8.1
   file_picker: ^11.0.0
   device_info_plus: 12.4.0
+  photo_manager: ^3.10.0
 
   
 

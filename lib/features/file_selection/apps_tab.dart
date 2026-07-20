@@ -10,6 +10,7 @@ class AppsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final appsAsyncValue = ref.watch(appProvider);
+    // This is now a List<SelectedItem>
     final selectedFiles = ref.watch(selectedFilesProvider);
 
     return appsAsyncValue.when(
@@ -19,7 +20,7 @@ class AppsTab extends ConsumerWidget {
         return GridView.builder(
           padding: const EdgeInsets.all(12),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4, 
+            crossAxisCount: 4,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             childAspectRatio: 0.8,
@@ -27,13 +28,18 @@ class AppsTab extends ConsumerWidget {
           itemCount: apps.length,
           itemBuilder: (context, index) {
             final app = apps[index];
-            
-            final isSelected = selectedFiles.contains(app.apkPath);
+
+            final isSelected = selectedFiles.any((item) => item.id == app.apkPath);
 
             return GestureDetector(
               onTap: () {
-                // We pass the raw .apk path to the Riverpod cart
-                ref.read(selectedFilesProvider.notifier).toggleFileSelection(app.apkPath);
+                // Add to the Riverpod cart using the unified model
+                ref
+                    .read(selectedFilesProvider.notifier)
+                    // Note: Ensure this method name matches exactly what you named it in your provider!
+                    .toggleFileSelection(
+                      SelectedItem(id: app.apkPath, path: app.apkPath),
+                    );
               },
               child: Stack(
                 alignment: Alignment.topCenter,
@@ -45,17 +51,17 @@ class AppsTab extends ConsumerWidget {
                         Image.memory(app.iconBytes, width: 50, height: 50)
                       else
                         const Icon(Icons.android, size: 50), // Fallback
-                      
+
                       const SizedBox(height: 8),
                       Text(
-                        app.appName, // The new package uses 'name' instead of 'appName'
+                        app.appName,
                         style: const TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis, 
+                        overflow: TextOverflow.ellipsis,
                         maxLines: 1,
                       ),
                     ],
                   ),
-                  
+
                   if (isSelected)
                     Positioned(
                       right: 0,
@@ -65,7 +71,11 @@ class AppsTab extends ConsumerWidget {
                           color: Colors.blue,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.check, color: Colors.white, size: 20),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                 ],
