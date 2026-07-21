@@ -13,7 +13,12 @@ class PhotosNotifier extends AsyncNotifier<List<AssetEntity>> {
     await PhotoManager.requestPermissionExtend();
     
     // Fetch the master list of image albums
-    final albums = await PhotoManager.getAssetPathList(type: requestType);
+    final albums = await PhotoManager.getAssetPathList(type: requestType,
+    filterOption: FilterOptionGroup(
+      orders: [
+        const OrderOption(type: OrderOptionType.createDate, asc: false),
+      ],
+    ));
     
     if (albums.isEmpty) return [];
     
