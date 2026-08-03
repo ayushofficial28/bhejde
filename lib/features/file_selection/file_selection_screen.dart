@@ -1,5 +1,6 @@
 import 'package:bhejde/features/file_selection/apps_tab.dart';
 import 'package:bhejde/features/file_selection/document_tab.dart';
+import 'package:bhejde/features/file_selection/files_tab.dart';
 import 'package:bhejde/features/file_selection/photo_tab.dart';
 import 'package:bhejde/features/file_selection/selection_provider.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ class FileSelectionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFiles = ref.watch(selectedFilesProvider);
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Select Files to Share'),
@@ -35,7 +36,7 @@ class FileSelectionScreen extends ConsumerWidget {
             PhotosTab(), // Placeholder for Photos
             VideosTab(), // Placeholder for Videos  
             DocumentsTab(), // Placeholder for Documents
-            Placeholder(), // Placeholder for Files
+            FilesTab(), // Placeholder for Files
           ],
         ),
         floatingActionButton: selectedFiles.isNotEmpty
