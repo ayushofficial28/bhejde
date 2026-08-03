@@ -1,4 +1,5 @@
 import 'package:bhejde/features/file_selection/apps_tab.dart';
+import 'package:bhejde/features/file_selection/document_tab.dart';
 import 'package:bhejde/features/file_selection/photo_tab.dart';
 import 'package:bhejde/features/file_selection/selection_provider.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +13,7 @@ class FileSelectionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFiles = ref.watch(selectedFilesProvider);
     return DefaultTabController(
-      length: 5,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Select Files to Share'),
@@ -33,7 +34,7 @@ class FileSelectionScreen extends ConsumerWidget {
             AppsTab(),
             PhotosTab(), // Placeholder for Photos
             VideosTab(), // Placeholder for Videos  
-            Placeholder(), // Placeholder for Documents
+            DocumentsTab(), // Placeholder for Documents
             Placeholder(), // Placeholder for Files
           ],
         ),
