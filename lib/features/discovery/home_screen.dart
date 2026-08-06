@@ -2,7 +2,6 @@ import 'package:bhejde/features/file_selection/file_selection_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Import the files we just created
 import '../../core/permission_service.dart';
 import 'nearby_controller.dart';
 import 'nearby_state.dart';

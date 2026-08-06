@@ -134,6 +134,14 @@ class NearbyController extends StateNotifier<NearbyState> {
     state = state.copyWith(status: ConnectionStatus.idle, discoveredPeers: {});
   }
 
+  Future<void> stopDiscovery() async {
+    try{
+    await Nearby().stopDiscovery();
+    } catch (e) {
+      state = state.copyWith(status: ConnectionStatus.error);
+    }
+  }
+
   @override
   void dispose() {
     Nearby().stopAdvertising();

@@ -34,7 +34,7 @@ class FileSelectionScreen extends ConsumerWidget {
           children: [
             AppsTab(),
             PhotosTab(), // Placeholder for Photos
-            VideosTab(), // Placeholder for Videos  
+            VideosTab(), // Placeholder for Videos
             DocumentsTab(), // Placeholder for Documents
             FilesTab(), // Placeholder for Files
           ],
@@ -42,7 +42,18 @@ class FileSelectionScreen extends ConsumerWidget {
         floatingActionButton: selectedFiles.isNotEmpty
             ? FloatingActionButton.extended(
                 onPressed: () {
-                  print("Ready to send ${selectedFiles.length} files!");
+                  if (context.mounted) {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                      ),
+                      builder: (context) => const DiscoveryModal(),
+                    );
+                  }
                 },
                 icon: const Icon(Icons.send),
                 label: Text("Send (${selectedFiles.length})"),
