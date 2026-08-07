@@ -83,7 +83,7 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
             const SizedBox(height: 10),
             const Center(child: Text("Scanning for nearby devices...")),
           ]
-          else if (state.status == ConnectionStatus.waiting) ...[
+          else if (state.status == ConnectionStatus.connecting) ...[
             const Center(child: CircularProgressIndicator(color: Colors.orange)),
             const SizedBox(height: 10),
             Center(child: Text("Connecting to ${state.pendingEndpointName}...")),

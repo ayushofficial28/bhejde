@@ -1,3 +1,4 @@
+import 'package:bhejde/features/discovery/discovery_modal.dart';
 import 'package:bhejde/features/file_selection/apps_tab.dart';
 import 'package:bhejde/features/file_selection/document_tab.dart';
 import 'package:bhejde/features/file_selection/files_tab.dart';

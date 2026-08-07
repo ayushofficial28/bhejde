@@ -72,7 +72,7 @@ class NearbyController extends StateNotifier<NearbyState> {
       await Nearby().acceptConnection(
         state.pendingEndpointId!,
         onPayLoadRecieved: (endid, payload) {
-          // Handle received payload
+          
         },
         onPayloadTransferUpdate: (endid, update) {
           // Handle payload transfer updates
@@ -98,6 +98,7 @@ class NearbyController extends StateNotifier<NearbyState> {
    Future<void> initiateConnection(String endpointId) async {
     String username = "BhejDe_Sender";      
     try {
+      state = state.copyWith(status: ConnectionStatus.connecting);
       await Nearby().requestConnection(
         username,
         endpointId,
@@ -114,7 +115,7 @@ class NearbyController extends StateNotifier<NearbyState> {
         },
         onConnectionResult: (id, status) {
           if (status == Status.CONNECTED) {
-            state = state.copyWith(status: ConnectionStatus.connected);
+            state = state.copyWith(status: ConnectionStatus.connected, connectedEndpointId: id);
           } else {
             state = state.copyWith(status: ConnectionStatus.idle);
           }
