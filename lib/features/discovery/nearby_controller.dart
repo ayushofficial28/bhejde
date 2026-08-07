@@ -1,16 +1,22 @@
+import 'dart:typed_data';
+
 import 'package:bhejde/features/discovery/nearby_state.dart';
+import 'package:bhejde/features/transfer/transfer_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:nearby_connections/nearby_connections.dart';
 
 
 final nearbyControllerProvider =
     StateNotifierProvider<NearbyController, NearbyState>((ref) {
-  return NearbyController();
+  return NearbyController(ref);
 });
 
 class NearbyController extends StateNotifier<NearbyState> {
-  NearbyController() : super(NearbyState());
+  final Ref ref;
+  NearbyController(this.ref) : super(NearbyState());
    final Strategy strategy = Strategy.P2P_POINT_TO_POINT;
+
 
    Future<void> startDiscovery() async {
     String username = "BhejDe_Sender";      //TODO: Add the take username and pass it here
@@ -71,13 +77,15 @@ class NearbyController extends StateNotifier<NearbyState> {
       try{
       await Nearby().acceptConnection(
         state.pendingEndpointId!,
-        onPayLoadRecieved: (endid, payload) {
-          
-        },
-        onPayloadTransferUpdate: (endid, update) {
-          // Handle payload transfer updates
-        },
+        onPayLoadRecieved: _onPayloadReceived,
+        onPayloadTransferUpdate: _onPayloadUpdate
       );
+      state = state.copyWith(
+          status: ConnectionStatus.connected, 
+          connectedEndpointId: state.pendingEndpointId,
+          pendingEndpointId: null, 
+          pendingEndpointName: null
+        );
       } catch (e) {
         state = state.copyWith(status: ConnectionStatus.error, pendingEndpointId: null, pendingEndpointName: null);
       }
@@ -105,12 +113,8 @@ class NearbyController extends StateNotifier<NearbyState> {
         onConnectionInitiated: (id, name) {
           Nearby().acceptConnection(
             id,
-            onPayLoadRecieved: (endid, payload) {
-              // Handle received payload
-            },
-            onPayloadTransferUpdate: (endid, update) {
-              // Handle payload transfer updates
-            },
+            onPayLoadRecieved: _onPayloadReceived,
+            onPayloadTransferUpdate: _onPayloadUpdate
           );
         },
         onConnectionResult: (id, status) {
@@ -151,5 +155,29 @@ class NearbyController extends StateNotifier<NearbyState> {
     super.dispose();
   }
 
-  
+  void Function(String, Payload) get _onPayloadReceived => (String endid, Payload payload) {
+    if (payload.type == PayloadType.BYTES) {
+      ref.read(transferControllerProvider.notifier).handleManifestBytes(payload.bytes!);
+    } else if (payload.type == PayloadType.FILE) {
+      ref.read(transferControllerProvider.notifier).handleIncomingFile(payload.id);
+    }
+  };
+
+  void Function(String, PayloadTransferUpdate) get _onPayloadUpdate => (String endid, PayloadTransferUpdate update) {
+    if (update.status == PayloadStatus.IN_PROGRESS) {
+      ref.read(transferControllerProvider.notifier).updateProgress(update.bytesTransferred, update.totalBytes);
+    } else if (update.status == PayloadStatus.SUCCESS) {
+      ref.read(transferControllerProvider.notifier).markFileCompleted(update.id);
+    } else if (update.status == PayloadStatus.FAILURE) {
+      ref.read(transferControllerProvider.notifier).markTransferError("Failed to transfer file");
+    }
+  };
+
+  Future<void> sendBytes(String endpointId, Uint8List bytes) async {
+    await Nearby().sendBytesPayload(endpointId, bytes);
+  }
+
+  Future<int> sendFile(String endpointId, String filePath) async {
+    return await Nearby().sendFilePayload(endpointId, filePath);
+  }
 }
