@@ -24,18 +24,16 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
   }
 
   Future<void> _prepareFilesAndStartDiscovery() async {
-    // 1. Fetch the raw paths in the background
+    ref.read(nearbyControllerProvider.notifier).startDiscovery();
     _pathsToSend = await ref.read(selectedFilesProvider.notifier).getFinalPathsForTransfer();
     
-    // 2. Update UI to stop the preparing spinner
     if (mounted) {
       setState(() {
         _isPreparingFiles = false;
       });
     }
 
-    // 3. NOW start the network discovery
-    ref.read(nearbyControllerProvider.notifier).startDiscovery();
+    
   }
 
   @override
