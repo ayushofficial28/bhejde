@@ -27,11 +27,12 @@ class TransferController extends Notifier<TransferState> {
 
     try {
       // 1. Prepare JSON Manifest
-      List<Map<String, dynamic>> fileManifest = [];
-      for (String path in filePaths) {
+      List<String> fileManifest = [];
+      for(String path in filePaths) {
         String fileName = path.split('/').last;
-        fileManifest.add({"path": path, "name": fileName});
+        fileManifest.add(fileName);
       }
+      
       String jsonString = jsonEncode({"type": "MANIFEST", "files": fileManifest});
       
       // 2. Ask NearbyController to send the bytes
@@ -65,7 +66,7 @@ class TransferController extends Notifier<TransferState> {
         
         _incomingFileQueue.clear();
         for (var fileData in files) {
-          _incomingFileQueue.add(fileData['name']);
+          _incomingFileQueue.add(fileData.toString());
         }
 
         state = state.copyWith(

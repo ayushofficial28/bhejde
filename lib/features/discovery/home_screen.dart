@@ -1,4 +1,5 @@
 import 'package:bhejde/features/file_selection/file_selection_screen.dart';
+import 'package:bhejde/features/transfer/transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -188,22 +189,6 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class TransferScreen extends StatelessWidget {
-  const TransferScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Transferring Files"),
-      ),
-      body: const Center(
-        child: Text("File transfer in progress..."),
       ),
     );
   }
