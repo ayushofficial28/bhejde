@@ -46,7 +46,7 @@ class TransferScreen extends ConsumerWidget {
 
       case TransferStatus.transferring:
         // Calculate the current file number (e.g., File 2 of 5)
-        int currentFileNumber = state.filesTransferred + 1;
+        int currentFileNumber = state.filesTransferred;
         // Prevent it from showing "File 6 of 5" for a split second at the end
         if (currentFileNumber > state.totalFiles) currentFileNumber = state.totalFiles;
 
@@ -61,7 +61,7 @@ class TransferScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              state.currentFileName ?? 'Transferring...',
+              state.currentFileName,
               style: const TextStyle(fontSize: 16, color: Colors.grey),
               textAlign: TextAlign.center,
             ),

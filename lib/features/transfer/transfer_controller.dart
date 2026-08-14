@@ -110,11 +110,11 @@ class TransferController extends Notifier<TransferState> {
     _activePayloads.remove(payloadId);
     int updatedCount = state.filesTransferred + 1;
     
-    if (updatedCount >= state.totalFiles) {
+    if (updatedCount > state.totalFiles) {
       state = state.copyWith(
         status: TransferStatus.completed,
         currentFileProgress: 1.0,
-        filesTransferred: updatedCount,
+        filesTransferred: state.totalFiles,
       );
     } else {
       state = state.copyWith(

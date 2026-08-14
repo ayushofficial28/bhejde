@@ -1,10 +1,13 @@
 import 'dart:typed_data';
 
+import 'package:android_intent_plus/android_intent.dart';
 import 'package:bhejde/features/discovery/nearby_state.dart';
 import 'package:bhejde/features/transfer/transfer_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:nearby_connections/nearby_connections.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:wifi_iot/wifi_iot.dart';
 
 
 final nearbyControllerProvider =
@@ -20,8 +23,11 @@ class NearbyController extends StateNotifier<NearbyState> {
 
    Future<void> startDiscovery() async {
     String username = "BhejDe_Sender";      //TODO: Add the take username and pass it here
-    state = state.copyWith(status: ConnectionStatus.discovering);
+    state = state.copyWith(status: ConnectionStatus.discovering,
+      discoveredPeers: {}
+    );
     try {
+      print('started discovery');
       await Nearby().startDiscovery(
         username,
         strategy,
@@ -49,7 +55,7 @@ class NearbyController extends StateNotifier<NearbyState> {
         username,
         strategy,
         onConnectionInitiated: (id, name) {
-          
+          print('started advertising');
           state = state.copyWith(
             pendingEndpointId: id,
             pendingEndpointName: name.endpointName,
@@ -179,5 +185,40 @@ class NearbyController extends StateNotifier<NearbyState> {
 
   Future<int> sendFile(String endpointId, String filePath) async {
     return await Nearby().sendFilePayload(endpointId, filePath);
+  }
+
+  Future<bool> checkHardwareRadios() async {
+    
+    // 1. Guard Location (Requires permission_handler)
+    if (!await Permission.location.serviceStatus.isEnabled) {
+      const AndroidIntent intent = AndroidIntent(
+        action: 'action_location_source_settings',
+      );
+      await intent.launch();
+      return false; 
+    }
+
+    // 2. Guard Bluetooth (Requires permission_handler)
+    if (!await Permission.bluetooth.serviceStatus.isEnabled) {
+      const AndroidIntent intent = AndroidIntent(
+        action: 'android.bluetooth.adapter.action.REQUEST_ENABLE',
+      );
+      await intent.launch();
+      return false; 
+    }
+
+    // 3. Guard Wi-Fi (Requires wifi_iot)
+    bool isWifiOn = await WiFiForIoTPlugin.isEnabled(); 
+    if (!isWifiOn) {
+      // Slides up the beautiful Android 10+ Wi-Fi bottom sheet
+      const AndroidIntent wifiIntent = AndroidIntent(
+        action: 'android.settings.panel.action.WIFI',
+      );
+      await wifiIntent.launch();
+      return false; 
+    }
+
+    // If you reach this line, all 3 chips are receiving power!
+    return true; 
   }
 }

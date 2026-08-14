@@ -45,6 +45,8 @@ dependencies:
   photo_manager_image_provider: ^2.2.0
   android_document_fetcher: ^1.0.0
   path_provider: ^2.1.6
+  android_intent_plus: ^6.1.0
+  wifi_iot: ^0.3.19+2
 
   
 

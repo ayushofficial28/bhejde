@@ -16,27 +16,27 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 1. THE EYES: We watch the blueprint. Anytime it changes, this screen rebuilds.
     final state = ref.watch(nearbyControllerProvider);
-    
+
     // 2. THE HANDS: We grab the controller so we can press the buttons (start/stop).
     final controller = ref.read(nearbyControllerProvider.notifier);
 
     ref.listen<NearbyState>(nearbyControllerProvider, (previous, next) {
-      if (previous?.status != ConnectionStatus.connected && 
+      if (previous?.status != ConnectionStatus.connected &&
           next.status == ConnectionStatus.connected) {
-            
         // Trigger the screen transition!
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => TransferScreen(),
-          ),
-        );
-    }
+        Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (context) => TransferScreen()));
+      }
     });
 
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('BhejDe', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'BhejDe',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
         elevation: 0,
       ),
@@ -45,52 +45,57 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-
-              
               if (state.status == ConnectionStatus.idle) ...[
                 const Icon(Icons.share, size: 100, color: Colors.blue),
                 const SizedBox(height: 20),
-                const Text("Ready to share offline", style: TextStyle(fontSize: 18)),
-              ] 
-              
-              else if (state.status == ConnectionStatus.discovering) ...[
+                const Text(
+                  "Ready to share offline",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ] else if (state.status == ConnectionStatus.discovering) ...[
                 const CircularProgressIndicator(),
                 const SizedBox(height: 20),
-                const Text("Scanning for nearby devices...", style: TextStyle(fontSize: 18)),
-                
+                const Text(
+                  "Scanning for nearby devices...",
+                  style: TextStyle(fontSize: 18),
+                ),
+
                 // Show the devices we found
                 if (state.discoveredPeers.isNotEmpty)
                   Expanded(
                     child: ListView.builder(
                       itemCount: state.discoveredPeers.length,
                       itemBuilder: (context, index) {
-                        String endpointId = state.discoveredPeers.keys.elementAt(index);
-                        String deviceName = state.discoveredPeers.values.elementAt(index);
-                        
+                        String endpointId = state.discoveredPeers.keys
+                            .elementAt(index);
+                        String deviceName = state.discoveredPeers.values
+                            .elementAt(index);
+
                         return ListTile(
                           leading: const Icon(Icons.phone_android),
                           title: Text(deviceName),
                           subtitle: const Text("Tap to connect"),
                           onTap: () {
-                            
-                           controller.initiateConnection(endpointId);
+                            controller.initiateConnection(endpointId);
                           },
                         );
                       },
                     ),
-                  )
-              ]
-
-              else if (state.status == ConnectionStatus.advertising) ...[
+                  ),
+              ] else if (state.status == ConnectionStatus.advertising) ...[
                 const CircularProgressIndicator(color: Colors.green),
                 const SizedBox(height: 20),
-                const Text("Waiting for sender to connect...", style: TextStyle(fontSize: 18)),
-              ]
-              
-              else if (state.status == ConnectionStatus.waiting) ...[
+                const Text(
+                  "Waiting for sender to connect...",
+                  style: TextStyle(fontSize: 18),
+                ),
+              ] else if (state.status == ConnectionStatus.waiting) ...[
                 const CircularProgressIndicator(color: Colors.orange),
                 const SizedBox(height: 20),
-                Text("Incoming connection from ${state.pendingEndpointName}...", style: const TextStyle(fontSize: 18)),
+                Text(
+                  "Incoming connection from ${state.pendingEndpointName}...",
+                  style: const TextStyle(fontSize: 18),
+                ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -115,13 +120,11 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ],
 
-
               const Spacer(),
 
               // ==========================================
               // THE BUTTONS: Triggering the permissions and hardware
               // ==========================================
-              
               if (state.status == ConnectionStatus.idle) ...[
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -129,7 +132,10 @@ class HomeScreen extends ConsumerWidget {
                     // SEND BUTTON
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30,
+                          vertical: 15,
+                        ),
                       ),
                       icon: const Icon(Icons.arrow_upward),
                       label: const Text("SEND"),
@@ -155,21 +161,48 @@ class HomeScreen extends ConsumerWidget {
                     // RECEIVE BUTTON
                     ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 30,
+                          vertical: 15,
+                        ),
                       ),
                       icon: const Icon(Icons.arrow_downward),
                       label: const Text("RECEIVE"),
                       onPressed: () async {
-                        bool granted = await PermissionService.requestPermissions();
-                        if (granted) {
-                          controller.startAdvertising();
-                        } else {
-                          if(context.mounted){
+                        // 1. Check App Permissions
+                        bool granted =
+                            await PermissionService.requestPermissions();
+                        if (!granted) {
+                          if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Permissions required to receive!')),
+                              const SnackBar(
+                                content: Text(
+                                  'Permissions required to connect!',
+                                ),
+                              ),
                             );
                           }
+                          return;
                         }
+
+                        // 2. Check Physical GPS Hardware (Calling your new controller method)
+                        bool hardwareReady = await controller
+                            .checkHardwareRadios();
+                        if (!hardwareReady) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Wi-Fi, Bluetooth and Location must be turned on to connect!',
+                                ),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+
+                        // 3. Start Advertising
+                        controller.startAdvertising();
                       },
                     ),
                   ],
@@ -178,13 +211,16 @@ class HomeScreen extends ConsumerWidget {
                 // CANCEL BUTTON (Shows up when scanning/advertising)
                 TextButton.icon(
                   icon: const Icon(Icons.cancel, color: Colors.red),
-                  label: const Text("Cancel", style: TextStyle(color: Colors.red)),
+                  label: const Text(
+                    "Cancel",
+                    style: TextStyle(color: Colors.red),
+                  ),
                   onPressed: () {
                     controller.stopAll();
                   },
-                )
+                ),
               ],
-              
+
               const SizedBox(height: 40),
             ],
           ),

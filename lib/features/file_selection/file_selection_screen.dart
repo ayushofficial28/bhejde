@@ -1,4 +1,6 @@
+import 'package:bhejde/core/permission_service.dart';
 import 'package:bhejde/features/discovery/discovery_modal.dart';
+import 'package:bhejde/features/discovery/nearby_controller.dart';
 import 'package:bhejde/features/file_selection/apps_tab.dart';
 import 'package:bhejde/features/file_selection/document_tab.dart';
 import 'package:bhejde/features/file_selection/files_tab.dart';
@@ -41,25 +43,49 @@ class FileSelectionScreen extends ConsumerWidget {
           ],
         ),
         floatingActionButton: selectedFiles.isNotEmpty
-            ? FloatingActionButton.extended(
-                onPressed: () {
-                  if (context.mounted) {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(20),
-                        ),
-                      ),
-                      builder: (context) => const DiscoveryModal(),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.send),
-                label: Text("Send (${selectedFiles.length})"),
-              )
-            : null,
+    ? FloatingActionButton.extended(
+        onPressed: () async {
+          // 1. Check App Permissions first
+          bool granted = await PermissionService.requestPermissions();
+          if (!granted) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Permissions required to send!')),
+              );
+            }
+            return; // Stop execution
+          }
+
+          // 2. Check Physical GPS Hardware 
+          // (Assuming you have access to your controller here like in the Receive button)
+          bool hardwareReady = await ref.read(nearbyControllerProvider.notifier).checkHardwareRadios();
+          if (!hardwareReady) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Wi-Fi, Bluetooth and Location must be turned on to connect!')),
+              );
+            }
+            return; // Stop execution
+          }
+
+          // 3. All clear! Open the Discovery Modal
+          if (context.mounted) {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(20),
+                ),
+              ),
+              builder: (context) => const DiscoveryModal(),
+            );
+          }
+        },
+        icon: const Icon(Icons.send),
+        label: Text("Send (${selectedFiles.length})"),
+      )
+    : null,
       ),
     );
   }

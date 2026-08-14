@@ -1,0 +1,4 @@
+-dontwarn androidx.window.extensions.**
+-dontwarn androidx.window.sidecar.**
+-dontwarn androidx.appcompat.**
+-dontwarn com.bumptech.glide.**
