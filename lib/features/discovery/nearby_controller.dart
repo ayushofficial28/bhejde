@@ -165,7 +165,11 @@ class NearbyController extends StateNotifier<NearbyState> {
     if (payload.type == PayloadType.BYTES) {
       ref.read(transferControllerProvider.notifier).handleManifestBytes(payload.bytes!);
     } else if (payload.type == PayloadType.FILE) {
-      ref.read(transferControllerProvider.notifier).handleIncomingFile(payload.id);
+      String cachePath = payload.uri ?? payload.filePath ?? '';
+  
+    ref.read(transferControllerProvider.notifier)
+     .handleIncomingFile(payload.id, cachePath);
+      //ref.read(transferControllerProvider.notifier).handleIncomingFile(payload.id);
     }
   };
 

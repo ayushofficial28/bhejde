@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data'; // Needed for Uint8List
+import 'package:bhejde/core/file_service.dart';
 import 'package:bhejde/features/discovery/nearby_controller.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +9,7 @@ import 'transfer_state.dart';
 class TransferController extends Notifier<TransferState> {
   final Map<int, String> _activePayloads = {};
   final List<String> _incomingFileQueue = [];
+  final Map<int, String> _payloadCachePaths = {};
 
   @override
   TransferState build() {
@@ -81,14 +83,15 @@ class TransferController extends Notifier<TransferState> {
     }
   }
 
-  void handleIncomingFile(int payloadId) {
+  void handleIncomingFile(int payloadId, String cachedPath) {
+    
     String expectedFileName = 'Unknown_File';
     if (_incomingFileQueue.isNotEmpty) {
       expectedFileName = _incomingFileQueue.removeAt(0);
     }
 
     _activePayloads[payloadId] = expectedFileName;
-
+    _payloadCachePaths[payloadId] = cachedPath;
     state = state.copyWith(
       status: TransferStatus.transferring,
       currentFileName: expectedFileName,
@@ -107,7 +110,15 @@ class TransferController extends Notifier<TransferState> {
   }
 
   void markFileCompleted(int payloadId) {
+    if (_activePayloads.containsKey(payloadId) && _payloadCachePaths.containsKey(payloadId)) {
+      String fileName = _activePayloads[payloadId]!;
+      String cachePath = _payloadCachePaths[payloadId]!;
+
+      // Fire the save operation! (We don't need to await it, let it run in the background)
+      FileService.moveFileToDownloads(cachePath, fileName);
+    }
     _activePayloads.remove(payloadId);
+    _payloadCachePaths.remove(payloadId);
     int updatedCount = state.filesTransferred + 1;
     
     if (updatedCount > state.totalFiles) {
