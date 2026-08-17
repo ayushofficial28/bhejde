@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:photo_manager/photo_manager.dart';
-// Make sure to import photo_manager and your model if it's in a different file
 
 class SelectedFileNotifier extends StateNotifier<List<SelectedItem>> {
   SelectedFileNotifier() : super([]);

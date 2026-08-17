@@ -110,15 +110,18 @@ class TransferController extends Notifier<TransferState> {
   }
 
   void markFileCompleted(int payloadId) {
-    if (_activePayloads.containsKey(payloadId) && _payloadCachePaths.containsKey(payloadId)) {
-      String fileName = _activePayloads[payloadId]!;
-      String cachePath = _payloadCachePaths[payloadId]!;
+    if(state.role == TransferRole.receiver) {
+      if (_activePayloads.containsKey(payloadId) && _payloadCachePaths.containsKey(payloadId)) {
+        String fileName = _activePayloads[payloadId]!;
+        String cachePath = _payloadCachePaths[payloadId]!;
 
-      // Fire the save operation! (We don't need to await it, let it run in the background)
-      FileService.moveFileToDownloads(cachePath, fileName);
+        // Fire the save operation! (We don't need to await it, let it run in the background)
+        FileService.moveFileToDownloads(cachePath, fileName);
+      }
+      _activePayloads.remove(payloadId);
+      _payloadCachePaths.remove(payloadId);
     }
-    _activePayloads.remove(payloadId);
-    _payloadCachePaths.remove(payloadId);
+    
     int updatedCount = state.filesTransferred + 1;
     
     if (updatedCount > state.totalFiles) {

@@ -1,7 +1,7 @@
 import 'package:bhejde/core/permission_service.dart';
 import 'package:bhejde/features/discovery/discovery_modal.dart';
 import 'package:bhejde/features/discovery/nearby_controller.dart';
-//import 'package:bhejde/features/file_selection/apps_tab.dart';
+import 'package:bhejde/features/file_selection/apps_tab.dart';
 import 'package:bhejde/features/file_selection/document_tab.dart';
 import 'package:bhejde/features/file_selection/files_tab.dart';
 import 'package:bhejde/features/file_selection/photo_tab.dart';
@@ -25,7 +25,7 @@ class FileSelectionScreen extends ConsumerWidget {
             tabAlignment: TabAlignment.center,
             isScrollable: true,
             tabs: [
-              //Tab(text: 'Apps'),
+              Tab(text: 'Apps'),
               Tab(text: 'Photos'),
               Tab(text: 'Videos'),
               Tab(text: 'Documents'),
@@ -35,7 +35,7 @@ class FileSelectionScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            //AppsTab(),
+            AppsTab(),
             PhotosTab(), // Placeholder for Photos
             VideosTab(), // Placeholder for Videos
             DocumentsTab(), // Placeholder for Documents
