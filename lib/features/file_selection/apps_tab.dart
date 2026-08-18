@@ -29,7 +29,7 @@ class AppsTab extends ConsumerWidget {
           itemBuilder: (context, index) {
             final app = apps[index];
 
-            final isSelected = selectedFiles.any((item) => item.id == app.apkPath);
+            final isSelected = selectedFiles.any((item) => item.id == app.packageName);
 
             return GestureDetector(
               onTap: () {
