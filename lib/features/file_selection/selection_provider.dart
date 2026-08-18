@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:apks_manager/apks_manager.dart';
 
 class SelectedFileNotifier extends StateNotifier<List<SelectedItem>> {
   SelectedFileNotifier() : super([]);
@@ -23,8 +24,15 @@ class SelectedFileNotifier extends StateNotifier<List<SelectedItem>> {
     
     for (var item in state) {
       if (item.path != null) {
-        // It's an App or a File. The path is already here.
-        finalPaths.add(item.path!);
+        if(item.path!.endsWith('.apk') && item.appName!=null){
+          final app=await ApksManager.createBundle(baseApkPath: item.path!, appName: item.appName!, extension: 'bhejde');
+          if(app!=null){
+            finalPaths.add(app);
+          }
+        }
+        else{
+          finalPaths.add(item.path!);
+        }
       } else if (item.asset != null) {
         // It's a Photo. We wait for the OS to give us the real hard drive path.
         final rawFile = await item.asset!.file;
@@ -47,10 +55,12 @@ class SelectedItem {
   final String id;           // The unique identifier (app package name, file path, or asset ID)
   final String? path;        // The physical hard drive path (if instantly available)
   final AssetEntity? asset;  // The photo database object (if it's a photo)
+  final String? appName;
 
   SelectedItem({
     required this.id,
     this.path,
     this.asset,
+    this.appName
   });
 }

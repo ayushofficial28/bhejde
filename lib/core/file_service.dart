@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:nearby_connections/nearby_connections.dart'; 
 
 class FileService {
-  static Future<void> moveFileToDownloads(String cacheFilePath, String originalFileName) async {
+  static Future<String> moveFileToDownloads(String cacheFilePath, String originalFileName) async {
     try {
       final Directory downloadsDir = Directory('/storage/emulated/0/Download/Bhejde');
       
@@ -29,11 +29,14 @@ class FileService {
       }
 
       await Nearby().copyFileAndDeleteOriginal(cacheFilePath, destinationFile.path); 
+
       
       print("✅ SUCCESS: File natively saved to ${destinationFile.path}");
+      return destinationFile.path;
       
     } catch (e) {
       print("❌ ERROR saving file natively: $e");
+      return cacheFilePath; // Return the original cache path if saving fails
     }
   }
 }

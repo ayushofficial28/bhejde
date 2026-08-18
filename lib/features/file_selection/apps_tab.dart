@@ -38,7 +38,7 @@ class AppsTab extends ConsumerWidget {
                     .read(selectedFilesProvider.notifier)
                     // Note: Ensure this method name matches exactly what you named it in your provider!
                     .toggleFileSelection(
-                      SelectedItem(id: app.apkPath, path: app.apkPath),
+                      SelectedItem(id: app.packageName, path: app.apkPath, appName: app.appName??'Unknown'),
                     );
               },
               child: Stack(

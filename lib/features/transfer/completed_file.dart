@@ -1,6 +1,5 @@
 enum InstallState { pending, installing, installed, failed }
 
-// 1. Base class for normal files (Images, Videos, etc.)
 class CompletedFile {
   final String name;
   final String path;
@@ -11,7 +10,6 @@ class CompletedFile {
   });
 }
 
-// 2. Subclass specifically for .bhejde apps
 class CompletedAppFile extends CompletedFile {
   final InstallState installState;
 

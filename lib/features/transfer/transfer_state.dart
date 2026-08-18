@@ -1,3 +1,5 @@
+import 'completed_file.dart';
+
 enum TransferStatus { idle, preparing, transferring, completed, error }
 enum TransferRole { sender, receiver, none } 
 
@@ -14,7 +16,9 @@ class TransferState {
   // Byte Progress (For smooth progress bars)
   final double currentFileProgress;     // 0.0 to 1.0
   final int totalBytesToTransfer;       
-  final int totalBytesTransferred;      
+  final int totalBytesTransferred;    
+
+  List<CompletedFile> completedFiles; // List to hold completed files  
   
   final String? errorMessage;           
 
@@ -29,6 +33,7 @@ class TransferState {
     this.totalBytesToTransfer = 0,
     this.totalBytesTransferred = 0,
     this.errorMessage,
+    this.completedFiles = const [],
   });
 
   TransferState copyWith({
@@ -42,6 +47,7 @@ class TransferState {
     int? totalBytesToTransfer,
     int? totalBytesTransferred,
     String? errorMessage,
+    List<CompletedFile>? completedFiles,
   }) {
     return TransferState(
       status: status ?? this.status,
@@ -54,6 +60,7 @@ class TransferState {
       totalBytesToTransfer: totalBytesToTransfer ?? this.totalBytesToTransfer,
       totalBytesTransferred: totalBytesTransferred ?? this.totalBytesTransferred,
       errorMessage: errorMessage ?? this.errorMessage,
+      completedFiles: completedFiles ?? this.completedFiles,
     );
   }
 }

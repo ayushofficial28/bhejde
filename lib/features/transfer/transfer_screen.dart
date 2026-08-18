@@ -1,122 +1,108 @@
+import 'package:bhejde/features/transfer/completed_file.dart';
+import 'package:bhejde/features/transfer/transfer_controller.dart';
+import 'package:bhejde/features/transfer/transfer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'transfer_state.dart';
-import 'transfer_controller.dart';
 
 class TransferScreen extends ConsumerWidget {
   const TransferScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // 1. Listen to the transfer state
     final state = ref.watch(transferControllerProvider);
+    final controller = ref.read(transferControllerProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(state.role == TransferRole.sender ? 'Sending Files' : 'Receiving Files'),
-        centerTitle: true,
+        title: Text(state.role == TransferRole.sender ? 'Sending...' : 'Receiving...'),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Center(
-            child: _buildTransferContent(state),
+      body: Column(
+        children: [
+          // --- 1. PROGRESS HEADER ---
+          Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                Text(
+                  state.status == TransferStatus.transferring 
+                      ? 'Files: ${state.filesTransferred} / ${state.totalFiles}'
+                      : state.status.name.toUpperCase(),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 12),
+                if (state.status == TransferStatus.transferring)
+                  LinearProgressIndicator(value: state.currentFileProgress),
+                const SizedBox(height: 8),
+                Text(state.currentFileName),
+              ],
+            ),
           ),
-        ),
+          
+          const Divider(thickness: 2),
+
+          // --- 2. COMPLETED FILES LIST ---
+          Expanded(
+            child: ListView.builder(
+              itemCount: state.completedFiles.length,
+              itemBuilder: (context, index) {
+                final file = state.completedFiles[index];
+                
+                return ListTile(
+                  leading: Icon(
+                    file is CompletedAppFile ? Icons.android : Icons.insert_drive_file,
+                    color: file is CompletedAppFile ? Colors.green : Colors.blue,
+                  ),
+                  title: Text(file.name),
+                  subtitle: Text(
+                    file.path.split('/').last, 
+                    maxLines: 1, 
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: _buildTrailingWidget(file, state.role, controller),
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  // 2. A helper method to show the right UI based on the exact status
-  Widget _buildTransferContent(TransferState state) {
-    switch (state.status) {
-      case TransferStatus.preparing:
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+  // --- TRAILING WIDGET LOGIC ---
+  Widget _buildTrailingWidget(CompletedFile file, TransferRole role, TransferController controller) {
+    // 1. Senders and Normal Files just get a checkmark
+    if (role == TransferRole.sender || file is! CompletedAppFile) {
+      return const Icon(Icons.check_circle, color: Colors.green);
+    }
+
+    switch (file.installState) {
+      case InstallState.installing:
+        return const SizedBox(
+          width: 24, 
+          height: 24,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        );
+        
+      case InstallState.installed:
+        return const Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 24),
-            Text(
-              'Preparing ${state.totalFiles} files...',
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            Text('Installed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+            SizedBox(width: 6),
+            Icon(Icons.check_circle, color: Colors.green),
           ],
         );
-
-      case TransferStatus.transferring:
-        // Calculate the current file number (e.g., File 2 of 5)
-        int currentFileNumber = state.filesTransferred;
-        // Prevent it from showing "File 6 of 5" for a split second at the end
-        if (currentFileNumber > state.totalFiles) currentFileNumber = state.totalFiles;
-
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.file_copy_outlined, size: 64, color: Colors.blue),
-            const SizedBox(height: 24),
-            Text(
-              'File $currentFileNumber of ${state.totalFiles}',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.currentFileName,
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 32),
-            
-            // The Progress Bar
-            LinearProgressIndicator(
-              value: state.currentFileProgress,
-              minHeight: 12,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            const SizedBox(height: 12),
-            
-            // The Percentage Text
-            Text(
-              '${(state.currentFileProgress * 100).toStringAsFixed(1)}%',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-          ],
+        
+      case InstallState.failed:
+      case InstallState.pending:
+        return ElevatedButton(
+          onPressed: () => controller.installApp(file.path),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: file.installState == InstallState.failed ? Colors.orange : Colors.blue,
+          ),
+          child: Text(file.installState == InstallState.failed ? 'Retry' : 'Install'),
         );
-
-      case TransferStatus.completed:
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.check_circle, size: 80, color: Colors.green),
-            const SizedBox(height: 24),
-            Text(
-              'Successfully transferred ${state.filesTransferred} files!',
-              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        );
-
-      case TransferStatus.error:
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.error_outline, size: 80, color: Colors.red),
-            const SizedBox(height: 24),
-            const Text(
-              'Transfer Failed',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.red),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.errorMessage ?? 'An unknown error occurred.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        );
-
-      default:
-        return const Text('Waiting for transfer to begin...');
     }
   }
 }
