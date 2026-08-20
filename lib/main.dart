@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       title: 'BhejDe',
       theme: ThemeData(
        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
           elevation: 0,

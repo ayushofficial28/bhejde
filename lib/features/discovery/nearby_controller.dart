@@ -1,5 +1,5 @@
 import 'dart:typed_data';
-
+import 'device_name_provider.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:bhejde/features/discovery/nearby_state.dart';
 import 'package:bhejde/features/transfer/transfer_controller.dart';
@@ -9,22 +9,21 @@ import 'package:nearby_connections/nearby_connections.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wifi_iot/wifi_iot.dart';
 
-
 final nearbyControllerProvider =
     StateNotifierProvider<NearbyController, NearbyState>((ref) {
-  return NearbyController(ref);
-});
+      return NearbyController(ref);
+    });
 
 class NearbyController extends StateNotifier<NearbyState> {
   final Ref ref;
   NearbyController(this.ref) : super(NearbyState());
-   final Strategy strategy = Strategy.P2P_POINT_TO_POINT;
+  final Strategy strategy = Strategy.P2P_POINT_TO_POINT;
 
-
-   Future<void> startDiscovery() async {
-    String username = "BhejDe_Sender";      //TODO: Add the take username and pass it here
-    state = state.copyWith(status: ConnectionStatus.discovering,
-      discoveredPeers: {}
+  Future<void> startDiscovery() async {
+    String username = ref.read(deviceNameProvider);
+    state = state.copyWith(
+      status: ConnectionStatus.discovering,
+      discoveredPeers: {},
     );
     try {
       print('started discovery');
@@ -45,10 +44,10 @@ class NearbyController extends StateNotifier<NearbyState> {
     } catch (e) {
       state = state.copyWith(status: ConnectionStatus.error);
     }
-   }
+  }
 
-   Future<void> startAdvertising() async {
-    String username = "BhejDe_Receiver";      //TODO: Add the take username and pass it here
+  Future<void> startAdvertising() async {
+    String username = ref.read(deviceNameProvider); 
     state = state.copyWith(status: ConnectionStatus.advertising);
     try {
       await Nearby().startAdvertising(
@@ -70,47 +69,62 @@ class NearbyController extends StateNotifier<NearbyState> {
           }
         },
         onDisconnected: (id) {
-          state = state.copyWith(connectedEndpointId: null, status: ConnectionStatus.idle);
+          state = state.copyWith(
+            connectedEndpointId: null,
+            status: ConnectionStatus.idle,
+          );
         },
       );
     } catch (e) {
       state = state.copyWith(status: ConnectionStatus.error);
     }
-   }
+  }
 
-   Future<void> acceptConnection() async {
+  Future<void> acceptConnection() async {
     if (state.pendingEndpointId != null) {
-      try{
-      await Nearby().acceptConnection(
-        state.pendingEndpointId!,
-        onPayLoadRecieved: _onPayloadReceived,
-        onPayloadTransferUpdate: _onPayloadUpdate
-      );
-      state = state.copyWith(
-          status: ConnectionStatus.connected, 
+      try {
+        await Nearby().acceptConnection(
+          state.pendingEndpointId!,
+          onPayLoadRecieved: _onPayloadReceived,
+          onPayloadTransferUpdate: _onPayloadUpdate,
+        );
+        state = state.copyWith(
+          status: ConnectionStatus.connected,
           connectedEndpointId: state.pendingEndpointId,
-          pendingEndpointId: null, 
-          pendingEndpointName: null
+          pendingEndpointId: null,
+          pendingEndpointName: null,
         );
       } catch (e) {
-        state = state.copyWith(status: ConnectionStatus.error, pendingEndpointId: null, pendingEndpointName: null);
+        state = state.copyWith(
+          status: ConnectionStatus.error,
+          pendingEndpointId: null,
+          pendingEndpointName: null,
+        );
       }
     }
-   }
+  }
 
-   Future<void> rejectConnection() async {
+  Future<void> rejectConnection() async {
     if (state.pendingEndpointId != null) {
-      try{
-      await Nearby().rejectConnection(state.pendingEndpointId!);
-      state = state.copyWith(pendingEndpointId: null, pendingEndpointName: null, status: ConnectionStatus.advertising);
+      try {
+        await Nearby().rejectConnection(state.pendingEndpointId!);
+        state = state.copyWith(
+          pendingEndpointId: null,
+          pendingEndpointName: null,
+          status: ConnectionStatus.advertising,
+        );
       } catch (e) {
-        state = state.copyWith(status: ConnectionStatus.error, pendingEndpointId: null, pendingEndpointName: null);
+        state = state.copyWith(
+          status: ConnectionStatus.error,
+          pendingEndpointId: null,
+          pendingEndpointName: null,
+        );
       }
     }
-   }
+  }
 
-   Future<void> initiateConnection(String endpointId) async {
-    String username = "BhejDe_Sender";      
+  Future<void> initiateConnection(String endpointId) async {
+    String username = "BhejDe_Sender";
     try {
       state = state.copyWith(status: ConnectionStatus.connecting);
       await Nearby().requestConnection(
@@ -120,24 +134,30 @@ class NearbyController extends StateNotifier<NearbyState> {
           Nearby().acceptConnection(
             id,
             onPayLoadRecieved: _onPayloadReceived,
-            onPayloadTransferUpdate: _onPayloadUpdate
+            onPayloadTransferUpdate: _onPayloadUpdate,
           );
         },
         onConnectionResult: (id, status) {
           if (status == Status.CONNECTED) {
-            state = state.copyWith(status: ConnectionStatus.connected, connectedEndpointId: id);
+            state = state.copyWith(
+              status: ConnectionStatus.connected,
+              connectedEndpointId: id,
+            );
           } else {
             state = state.copyWith(status: ConnectionStatus.idle);
           }
         },
         onDisconnected: (id) {
-          state = state.copyWith(connectedEndpointId: null, status: ConnectionStatus.idle);
+          state = state.copyWith(
+            connectedEndpointId: null,
+            status: ConnectionStatus.idle,
+          );
         },
       );
     } catch (e) {
       state = state.copyWith(status: ConnectionStatus.error);
     }
-   }
+  }
 
   Future<void> stopAll() async {
     await Nearby().stopAdvertising();
@@ -146,8 +166,8 @@ class NearbyController extends StateNotifier<NearbyState> {
   }
 
   Future<void> stopDiscovery() async {
-    try{
-    await Nearby().stopDiscovery();
+    try {
+      await Nearby().stopDiscovery();
     } catch (e) {
       state = state.copyWith(status: ConnectionStatus.error);
     }
@@ -161,27 +181,38 @@ class NearbyController extends StateNotifier<NearbyState> {
     super.dispose();
   }
 
-  void Function(String, Payload) get _onPayloadReceived => (String endid, Payload payload) {
+  void Function(String, Payload)
+  get _onPayloadReceived => (String endid, Payload payload) {
     if (payload.type == PayloadType.BYTES) {
-      ref.read(transferControllerProvider.notifier).handleManifestBytes(payload.bytes!);
+      ref
+          .read(transferControllerProvider.notifier)
+          .handleManifestBytes(payload.bytes!);
     } else if (payload.type == PayloadType.FILE) {
       String cachePath = payload.uri ?? payload.filePath ?? '';
-  
-    ref.read(transferControllerProvider.notifier)
-     .handleIncomingFile(payload.id, cachePath);
+
+      ref
+          .read(transferControllerProvider.notifier)
+          .handleIncomingFile(payload.id, cachePath);
       //ref.read(transferControllerProvider.notifier).handleIncomingFile(payload.id);
     }
   };
 
-  void Function(String, PayloadTransferUpdate) get _onPayloadUpdate => (String endid, PayloadTransferUpdate update) {
-    if (update.status == PayloadStatus.IN_PROGRESS) {
-      ref.read(transferControllerProvider.notifier).updateProgress(update.bytesTransferred, update.totalBytes);
-    } else if (update.status == PayloadStatus.SUCCESS) {
-      ref.read(transferControllerProvider.notifier).markFileCompleted(update.id);
-    } else if (update.status == PayloadStatus.FAILURE) {
-      ref.read(transferControllerProvider.notifier).markTransferError("Failed to transfer file");
-    }
-  };
+  void Function(String, PayloadTransferUpdate) get _onPayloadUpdate =>
+      (String endid, PayloadTransferUpdate update) {
+        if (update.status == PayloadStatus.IN_PROGRESS) {
+          ref
+              .read(transferControllerProvider.notifier)
+              .updateProgress(update.bytesTransferred, update.totalBytes);
+        } else if (update.status == PayloadStatus.SUCCESS) {
+          ref
+              .read(transferControllerProvider.notifier)
+              .markFileCompleted(update.id);
+        } else if (update.status == PayloadStatus.FAILURE) {
+          ref
+              .read(transferControllerProvider.notifier)
+              .markTransferError("Failed to transfer file");
+        }
+      };
 
   Future<void> sendBytes(String endpointId, Uint8List bytes) async {
     await Nearby().sendBytesPayload(endpointId, bytes);
@@ -192,14 +223,13 @@ class NearbyController extends StateNotifier<NearbyState> {
   }
 
   Future<bool> checkHardwareRadios() async {
-    
     // 1. Guard Location (Requires permission_handler)
     if (!await Permission.location.serviceStatus.isEnabled) {
       const AndroidIntent intent = AndroidIntent(
         action: 'action_location_source_settings',
       );
       await intent.launch();
-      return false; 
+      return false;
     }
 
     // 2. Guard Bluetooth (Requires permission_handler)
@@ -208,21 +238,21 @@ class NearbyController extends StateNotifier<NearbyState> {
         action: 'android.bluetooth.adapter.action.REQUEST_ENABLE',
       );
       await intent.launch();
-      return false; 
+      return false;
     }
 
     // 3. Guard Wi-Fi (Requires wifi_iot)
-    bool isWifiOn = await WiFiForIoTPlugin.isEnabled(); 
+    bool isWifiOn = await WiFiForIoTPlugin.isEnabled();
     if (!isWifiOn) {
       // Slides up the beautiful Android 10+ Wi-Fi bottom sheet
       const AndroidIntent wifiIntent = AndroidIntent(
         action: 'android.settings.panel.action.WIFI',
       );
       await wifiIntent.launch();
-      return false; 
+      return false;
     }
 
     // If you reach this line, all 3 chips are receiving power!
-    return true; 
+    return true;
   }
 }

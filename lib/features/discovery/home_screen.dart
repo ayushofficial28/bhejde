@@ -2,10 +2,13 @@ import 'package:bhejde/features/file_selection/file_selection_screen.dart';
 import 'package:bhejde/features/transfer/transfer_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:apks_manager/apks_manager.dart';
 
 import '../../core/permission_service.dart';
 import 'nearby_controller.dart';
 import 'nearby_state.dart';
+import 'device_name_provider.dart'; // 👉 Import our new provider
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -14,6 +17,7 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(nearbyControllerProvider);
     final controller = ref.read(nearbyControllerProvider.notifier);
+    final currentDeviceName = ref.watch(deviceNameProvider); 
 
     ref.listen<NearbyState>(nearbyControllerProvider, (previous, next) {
       if (previous?.status != ConnectionStatus.connected &&
@@ -24,9 +28,8 @@ class HomeScreen extends ConsumerWidget {
     });
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50, // Slightly off-white for a premium feel
+      backgroundColor: Colors.grey.shade50,
       
-      // 1. APP BAR
       appBar: AppBar(
         title: const Text(
           'BhejDe',
@@ -37,7 +40,6 @@ class HomeScreen extends ConsumerWidget {
         backgroundColor: Colors.transparent,
       ),
 
-      // 2. THE DRAWER
       drawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -46,9 +48,9 @@ class HomeScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
               ),
-              accountName: const Text(
-                "Ayush", // State placeholder for the device name
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              accountName: Text(
+                currentDeviceName, // 👉 Display the dynamic name
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               accountEmail: const Text("Ready to connect"),
               currentAccountPicture: const CircleAvatar(
@@ -60,8 +62,8 @@ class HomeScreen extends ConsumerWidget {
               leading: const Icon(Icons.edit_rounded),
               title: const Text('Change Device Name'),
               onTap: () {
-                // TODO: Open a Dialog to update the device name in Riverpod/SharedPreferences
-                Navigator.pop(context); // Close drawer
+                Navigator.pop(context); 
+                _showEditNameDialog(context, ref);
               },
             ),
             const Divider(),
@@ -69,8 +71,8 @@ class HomeScreen extends ConsumerWidget {
               leading: const Icon(Icons.install_mobile_rounded),
               title: const Text('Install APK'),
               onTap: () {
-                // TODO: Trigger your file picker and Ackpine installation logic here
                 Navigator.pop(context);
+                _handleInstallApp(context);
               },
             ),
           ],
@@ -84,7 +86,6 @@ class HomeScreen extends ConsumerWidget {
             children: [
               const Spacer(flex: 2),
 
-              // 3. LOGO & BRANDING AREA
               Container(
                 width: 130,
                 height: 130,
@@ -119,28 +120,16 @@ class HomeScreen extends ConsumerWidget {
 
               const Spacer(flex: 3),
 
-              // 4. DYNAMIC STATE UI
               if (state.status == ConnectionStatus.idle) ...[
-                // THE SEND/RECEIVE BUTTONS (Stacked & Oval)
-                _buildActionButtons(context, controller),
-              ] else if (state.status == ConnectionStatus.discovering) ...[
-                // DISCOVERING STATE
-                _buildDiscoveringUI(state, controller, context),
+                _buildActionButtons(context, controller, ref),
               ] else if (state.status == ConnectionStatus.advertising) ...[
-                // ADVERTISING STATE
-                _buildLoadingCard(
-                  context,
-                  "Waiting for sender to connect...",
-                  Icons.wifi_tethering,
-                ),
+                _buildLoadingCard(context, "Waiting for sender to connect...", Icons.wifi_tethering),
               ] else if (state.status == ConnectionStatus.waiting) ...[
-                // WAITING STATE (Accept/Reject)
                 _buildWaitingUI(state, controller),
               ],
 
               const Spacer(flex: 2),
 
-              // 5. CANCEL BUTTON (Detached from the bottom edge)
               if (state.status != ConnectionStatus.idle)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 24.0),
@@ -168,7 +157,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  // --- HELPER WIDGETS ---
+  // --- HELPER METHODS ---
 
   String _getSubtitleText(ConnectionStatus status) {
     switch (status) {
@@ -185,18 +174,17 @@ class HomeScreen extends ConsumerWidget {
     }
   }
 
-  Widget _buildActionButtons(BuildContext context, dynamic controller) {
+  Widget _buildActionButtons(BuildContext context, dynamic controller, WidgetRef ref) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // SEND BUTTON
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Theme.of(context).colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-            minimumSize: const Size(double.infinity, 70), // Full width
-            shape: const StadiumBorder(), // Big Oval
+            minimumSize: const Size(double.infinity, 70), 
+            shape: const StadiumBorder(), 
             elevation: 4,
           ),
           icon: const Icon(Icons.arrow_upward_rounded, size: 28),
@@ -207,9 +195,13 @@ class HomeScreen extends ConsumerWidget {
           onPressed: () async {
             bool granted = await PermissionService.requestPermissions();
             if (!granted) {
-              if (context.mounted) _showSnackBar(context, 'Permissions required!');
+              if (context.mounted) _showSnackBar(context, 'Permissions required!', isError: true);
               return;
             }
+            
+            // 👉 Smart fetch: Get real name now that permissions are granted!
+            ref.read(deviceNameProvider.notifier).refreshHardwareName();
+
             if (context.mounted) {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const FileSelectionScreen()),
@@ -218,9 +210,8 @@ class HomeScreen extends ConsumerWidget {
           },
         ),
         
-        const SizedBox(height: 20), // Spacing between buttons
+        const SizedBox(height: 20), 
         
-        // RECEIVE BUTTON
         ElevatedButton.icon(
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
@@ -238,13 +229,17 @@ class HomeScreen extends ConsumerWidget {
           onPressed: () async {
             bool granted = await PermissionService.requestPermissions();
             if (!granted) {
-              if (context.mounted) _showSnackBar(context, 'Permissions required!');
+              if (context.mounted) _showSnackBar(context, 'Permissions required!', isError: true);
               return;
             }
+
+            // 👉 Smart fetch: Get real name now that permissions are granted!
+            ref.read(deviceNameProvider.notifier).refreshHardwareName();
+
             bool hardwareReady = await controller.checkHardwareRadios();
             if (!hardwareReady) {
               if (context.mounted) {
-                _showSnackBar(context, 'Turn on Wi-Fi, Bluetooth, and Location!');
+                _showSnackBar(context, 'Turn on Wi-Fi, Bluetooth, and Location!', isError: true);
               }
               return;
             }
@@ -255,67 +250,60 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildDiscoveringUI(NearbyState state, dynamic controller, BuildContext context) {
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 250),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
-        ],
-      ),
-      child: state.discoveredPeers.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(32.0),
-              child: Column(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 24),
-                  Text("Looking for devices..."),
-                ],
-              ),
-            )
-          : ListView.separated(
-              shrinkWrap: true,
-              itemCount: state.discoveredPeers.length,
-              separatorBuilder: (context, index) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                String endpointId = state.discoveredPeers.keys.elementAt(index);
-                String deviceName = state.discoveredPeers.values.elementAt(index);
+  // Widget _buildDiscoveringUI(NearbyState state, dynamic controller, BuildContext context) {
+  //   return Container(
+  //     constraints: const BoxConstraints(maxHeight: 250),
+  //     decoration: BoxDecoration(
+  //       color: Colors.white,
+  //       borderRadius: BorderRadius.circular(24),
+  //       boxShadow: [
+  //         BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
+  //       ],
+  //     ),
+  //     child: state.discoveredPeers.isEmpty
+  //         ? const Padding(
+  //             padding: EdgeInsets.all(32.0),
+  //             child: Column(
+  //               children: [
+  //                 CircularProgressIndicator(),
+  //                 SizedBox(height: 24),
+  //                 Text("Looking for devices..."),
+  //               ],
+  //             ),
+  //           )
+  //         : ListView.separated(
+  //             shrinkWrap: true,
+  //             itemCount: state.discoveredPeers.length,
+  //             separatorBuilder: (context, index) => const Divider(height: 1),
+  //             itemBuilder: (context, index) {
+  //               String endpointId = state.discoveredPeers.keys.elementAt(index);
+  //               String deviceName = state.discoveredPeers.values.elementAt(index);
 
-                return ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                  leading: CircleAvatar(
-                    backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                    child: Icon(Icons.phone_android, color: Theme.of(context).colorScheme.primary),
-                  ),
-                  title: Text(deviceName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: const Text("Tap to connect"),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => controller.initiateConnection(endpointId),
-                );
-              },
-            ),
-    );
-  }
+  //               return ListTile(
+  //                 contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+  //                 leading: CircleAvatar(
+  //                   backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+  //                   child: Icon(Icons.phone_android, color: Theme.of(context).colorScheme.primary),
+  //                 ),
+  //                 title: Text(deviceName, style: const TextStyle(fontWeight: FontWeight.bold)),
+  //                 subtitle: const Text("Tap to connect"),
+  //                 trailing: const Icon(Icons.chevron_right_rounded),
+  //                 onTap: () => controller.initiateConnection(endpointId),
+  //               );
+  //             },
+  //           ),
+  //   );
+  // }
 
   Widget _buildLoadingCard(BuildContext context, String text, IconData icon) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Column(
@@ -331,7 +319,7 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Text(text, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          Text(text, textAlign: TextAlign.center, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -339,16 +327,13 @@ class HomeScreen extends ConsumerWidget {
 
   Widget _buildWaitingUI(NearbyState state, dynamic controller) {
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(32),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          )
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, 10))
         ],
       ),
       child: Column(
@@ -393,9 +378,114 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _showSnackBar(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+  // --- DIALOGS & INSTALLATION METHODS ---
+
+  void _showEditNameDialog(BuildContext context, WidgetRef ref) {
+    final currentName = ref.read(deviceNameProvider);
+    final textController = TextEditingController(text: currentName);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Change Device Name"),
+          content: TextField(
+            controller: textController,
+            decoration:  InputDecoration(
+              hintText: currentName,
+              border: OutlineInputBorder(),
+            ),
+            maxLength: 20, 
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            FilledButton(
+              onPressed: () {
+                ref.read(deviceNameProvider.notifier).updateName(textController.text);
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  Future<void> _handleInstallApp(BuildContext context) async {
+    try {
+      // 1. Open Native File Picker with Custom Extensions
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['apk', 'apks', 'xapk', 'bhejde'],
+      );
+
+      // 2. Check if user canceled the picker
+      if (result == null || result.files.single.path == null) {
+        return; 
+      }
+
+      final path = result.files.single.path!;
+
+      // 3. Show feedback that installation is starting
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Preparing installation... Please wait.'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+      // 4. Pass to your package
+      final success = await ApksManager.installBundle(path);
+
+      // 5. Show Success/Failure UI
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Installation completed successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Installation failed or was cancelled.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error installing bundle: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showSnackBar(BuildContext context, String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message), 
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: isError ? Colors.red : Colors.green,
+        ),
+      );
   }
 }
