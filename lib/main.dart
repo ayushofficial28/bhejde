@@ -1,9 +1,12 @@
 
+import 'package:apks_manager/apks_manager.dart';
 import 'package:bhejde/features/discovery/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  ApksManager.cleanUpTempDirectory();
   runApp(const ProviderScope(child: MyApp()));
 }
 
