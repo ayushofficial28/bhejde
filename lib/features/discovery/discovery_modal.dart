@@ -5,7 +5,6 @@ import 'package:bhejde/features/discovery/nearby_controller.dart';
 import 'package:bhejde/features/discovery/nearby_state.dart';
 import 'package:bhejde/features/file_selection/selection_provider.dart';
 import 'package:bhejde/features/transfer/transfer_controller.dart';
-// import 'package:bhejde/features/transfer/transfer_screen.dart';
 
 class DiscoveryModal extends ConsumerStatefulWidget {
   const DiscoveryModal({super.key});
@@ -33,8 +32,6 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
         _isPreparingFiles = false;
       });
     }
-
-    
   }
 
   @override
@@ -42,7 +39,7 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
     final state = ref.watch(nearbyControllerProvider);
     final controller = ref.read(nearbyControllerProvider.notifier);
 
-    // Listen for a successful connection
+    // Listen for a successful connection (Logic preserved exactly)
     ref.listen<NearbyState>(nearbyControllerProvider, (previous, next) {
       if (previous?.status != ConnectionStatus.connected && 
           next.status == ConnectionStatus.connected) {
@@ -60,77 +57,184 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
       }
     });
 
+    // --- UI ENHANCEMENTS START HERE ---
     return Container(
       height: MediaQuery.of(context).size.height * 0.6,
-      padding: const EdgeInsets.all(20),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Select Receiver",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          // Drag Handle
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           
+          // Header
+          const Text(
+            "Select Receiver",
+            style: TextStyle(
+              fontSize: 24, 
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 20),
           
+          // Dynamic Status Card
           if (_isPreparingFiles) ...[
-            const Center(child: CircularProgressIndicator(color: Colors.purple)),
-            const SizedBox(height: 10),
-            const Center(child: Text("Preparing files for transfer...")),
-          ] 
-          
-          else if (state.status == ConnectionStatus.discovering) ...[
-            const Center(child: CircularProgressIndicator()),
-            const SizedBox(height: 10),
-            const Center(child: Text("Scanning for nearby devices...")),
-          ]
-          else if (state.status == ConnectionStatus.connecting) ...[
-            const Center(child: CircularProgressIndicator(color: Colors.orange)),
-            const SizedBox(height: 10),
-            Center(child: Text("Connecting to ${state.pendingEndpointName}...")),
+            _buildStatusCard(context, "Preparing files...", Icons.folder_zip_rounded, Colors.purple),
+          ] else if (state.status == ConnectionStatus.discovering) ...[
+            _buildStatusCard(context, "Scanning for nearby devices...", Icons.radar_rounded, Theme.of(context).colorScheme.primary),
+          ] else if (state.status == ConnectionStatus.connecting) ...[
+            _buildStatusCard(context, "Connecting to ${state.pendingEndpointName}...", Icons.link_rounded, Colors.orange),
           ],
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
           
           // The List of Available Devices
           if (!_isPreparingFiles)
             Expanded(
-              child: ListView.builder(
-                itemCount: state.discoveredPeers.length,
-                itemBuilder: (context, index) {
-                  String endpointId = state.discoveredPeers.keys.elementAt(index);
-                  String deviceName = state.discoveredPeers.values.elementAt(index);
-                  
-                  return Card(
-                    elevation: 2,
-                    child: ListTile(
-                      leading: const CircleAvatar(
-                        backgroundColor: Colors.blue,
-                        child: Icon(Icons.person, color: Colors.white),
+              child: state.discoveredPeers.isEmpty
+                  ? Center(
+                      child: Text(
+                        "Make sure the receiver is visible",
+                        style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
                       ),
-                      title: Text(deviceName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: const Text("Tap to connect"),
-                      trailing: const Icon(Icons.send, color: Colors.blue),
-                      onTap: () {
-                        controller.initiateConnection(endpointId);
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      itemCount: state.discoveredPeers.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        String endpointId = state.discoveredPeers.keys.elementAt(index);
+                        String deviceName = state.discoveredPeers.values.elementAt(index);
+                        
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.02),
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).colorScheme.primaryContainer,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.phone_android_rounded, 
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            title: Text(
+                              deviceName, 
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            ),
+                            subtitle: Text(
+                              "Tap to connect",
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                            ),
+                            trailing: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.grey.shade50,
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.send_rounded, 
+                                color: Theme.of(context).colorScheme.primary, 
+                                size: 20,
+                              ),
+                            ),
+                            onTap: () {
+                              controller.initiateConnection(endpointId);
+                            },
+                          ),
+                        );
                       },
                     ),
-                  );
-                },
-              ),
             ),
           
+          const SizedBox(height: 16),
+
           // Cancel Button
-          SizedBox(
-            width: double.infinity,
-            child: TextButton(
-              onPressed: () {
-                controller.stopAll();
-                Navigator.pop(context);
-              },
-              child: const Text("Cancel", style: TextStyle(color: Colors.red, fontSize: 16)),
+          SafeArea(
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red,
+                  side: BorderSide(color: Colors.red.shade300, width: 1.5),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: const StadiumBorder(),
+                ),
+                onPressed: () {
+                  controller.stopAll();
+                  Navigator.pop(context);
+                },
+                child: const Text("Cancel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              ),
             ),
           )
+        ],
+      ),
+    );
+  }
+
+  // --- UI HELPER METHOD ---
+  Widget _buildStatusCard(BuildContext context, String text, IconData icon, Color color) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              valueColor: AlwaysStoppedAnimation<Color>(color),
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: color.withOpacity(0.8), // Adjusted for better text contrast
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          Icon(icon, color: color.withOpacity(0.5)),
         ],
       ),
     );

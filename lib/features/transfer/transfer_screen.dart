@@ -4,7 +4,6 @@ import 'package:bhejde/features/transfer/transfer_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
 class TransferScreen extends ConsumerWidget {
   const TransferScreen({super.key});
 
@@ -14,55 +13,141 @@ class TransferScreen extends ConsumerWidget {
     final controller = ref.read(transferControllerProvider.notifier);
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: Text(state.role == TransferRole.sender ? 'Sending...' : 'Receiving...'),
+        title: Text(
+          state.role == TransferRole.sender ? 'Sending Files' : 'Receiving Files',
+          style: const TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: state.status != TransferStatus.transferring,
       ),
       body: Column(
         children: [
-          // --- 1. PROGRESS HEADER ---
+          // --- 1. PREMIUM PROGRESS CARD ---
           Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              children: [
-                Text(
-                  state.status == TransferStatus.transferring 
-                      ? 'Files: ${state.filesTransferred} / ${state.totalFiles}'
-                      : state.status.name.toUpperCase(),
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                if (state.status == TransferStatus.transferring)
-                  LinearProgressIndicator(value: state.currentFileProgress),
-                const SizedBox(height: 8),
-                Text(state.currentFileName),
-              ],
+            padding: const EdgeInsets.all(16.0),
+            child: Container(
+              padding: const EdgeInsets.all(24.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        state.status == TransferStatus.transferring
+                            ? 'Transferring...'
+                            : state.status.name.toUpperCase(),
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ),
+                      Text(
+                        '${state.filesTransferred} / ${state.totalFiles}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Animated Progress Bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: state.status == TransferStatus.transferring ? state.currentFileProgress : 1.0,
+                      minHeight: 10,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // Current File Name
+                  Text(
+                    state.currentFileName.isEmpty ? "Waiting..." : state.currentFileName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          
-          const Divider(thickness: 2),
 
           // --- 2. COMPLETED FILES LIST ---
           Expanded(
-            child: ListView.builder(
-              itemCount: state.completedFiles.length,
-              itemBuilder: (context, index) {
-                final file = state.completedFiles[index];
-                
-                return ListTile(
-                  leading: Icon(
-                    file is CompletedAppFile ? Icons.android : Icons.insert_drive_file,
-                    color: file is CompletedAppFile ? Colors.green : Colors.blue,
+            child: state.completedFiles.isEmpty
+                ? Center(
+                    child: Text(
+                      "No files completed yet",
+                      style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: state.completedFiles.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final file = state.completedFiles[index];
+
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: file is CompletedAppFile 
+                                  ? Colors.green.withOpacity(0.1) 
+                                  : Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              file is CompletedAppFile ? Icons.android_rounded : Icons.insert_drive_file_rounded,
+                              color: file is CompletedAppFile ? Colors.green : Colors.blue,
+                            ),
+                          ),
+                          title: Text(
+                            file.name,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          subtitle: Text(
+                            file.path.split('/').last,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                          ),
+                          trailing: _buildTrailingWidget(file, state.role, controller, context),
+                        ),
+                      );
+                    },
                   ),
-                  title: Text(file.name),
-                  subtitle: Text(
-                    file.path.split('/').last, 
-                    maxLines: 1, 
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: _buildTrailingWidget(file, state.role, controller),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -70,36 +155,41 @@ class TransferScreen extends ConsumerWidget {
   }
 
   // --- TRAILING WIDGET LOGIC ---
-  Widget _buildTrailingWidget(CompletedFile file, TransferRole role, TransferController controller) {
-    // 1. Senders and Normal Files just get a checkmark
+  Widget _buildTrailingWidget(CompletedFile file, TransferRole role, TransferController controller, BuildContext context) {
     if (role == TransferRole.sender || file is! CompletedAppFile) {
-      return const Icon(Icons.check_circle, color: Colors.green);
+      return const Icon(Icons.check_circle_rounded, color: Colors.green, size: 28);
     }
 
     switch (file.installState) {
       case InstallState.installing:
         return const SizedBox(
-          width: 24, 
+          width: 24,
           height: 24,
           child: CircularProgressIndicator(strokeWidth: 2.5),
         );
-        
+
       case InstallState.installed:
         return const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text('Installed', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-            SizedBox(width: 6),
-            Icon(Icons.check_circle, color: Colors.green),
+            SizedBox(width: 8),
+            Icon(Icons.check_circle_rounded, color: Colors.green),
           ],
         );
-        
+
       case InstallState.failed:
       case InstallState.pending:
-        return ElevatedButton(
+        return FilledButton.tonal(
           onPressed: () => controller.installApp(file.path),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: file.installState == InstallState.failed ? Colors.orange : Colors.blue,
+          style: FilledButton.styleFrom(
+            backgroundColor: file.installState == InstallState.failed 
+                ? Colors.red.withOpacity(0.1) 
+                : Theme.of(context).colorScheme.primaryContainer,
+            foregroundColor: file.installState == InstallState.failed 
+                ? Colors.red 
+                : Theme.of(context).colorScheme.primary,
+            shape: const StadiumBorder(),
           ),
           child: Text(file.installState == InstallState.failed ? 'Retry' : 'Install'),
         );

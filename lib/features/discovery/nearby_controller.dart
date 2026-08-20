@@ -124,7 +124,13 @@ class NearbyController extends StateNotifier<NearbyState> {
   }
 
   Future<void> initiateConnection(String endpointId) async {
-    String username = "BhejDe_Sender";
+    String username = ref.read(deviceNameProvider);
+    String endpointName = state.discoveredPeers[endpointId] ?? "Unknown";
+    state = state.copyWith(
+      status: ConnectionStatus.connecting,
+      pendingEndpointId: endpointId,
+      pendingEndpointName: endpointName,
+    );
     try {
       state = state.copyWith(status: ConnectionStatus.connecting);
       await Nearby().requestConnection(
@@ -142,20 +148,30 @@ class NearbyController extends StateNotifier<NearbyState> {
             state = state.copyWith(
               status: ConnectionStatus.connected,
               connectedEndpointId: id,
+              pendingEndpointId: null,
+              pendingEndpointName: null,
             );
           } else {
-            state = state.copyWith(status: ConnectionStatus.idle);
+            state = state.copyWith(status: ConnectionStatus.idle,
+              pendingEndpointId: null,
+              pendingEndpointName: null,
+            );
           }
         },
         onDisconnected: (id) {
           state = state.copyWith(
             connectedEndpointId: null,
             status: ConnectionStatus.idle,
+            pendingEndpointId: null,
+            pendingEndpointName: null,
           );
         },
       );
     } catch (e) {
-      state = state.copyWith(status: ConnectionStatus.error);
+      state = state.copyWith(status: ConnectionStatus.error,
+        pendingEndpointId: null,
+        pendingEndpointName: null,
+      );
     }
   }
 
