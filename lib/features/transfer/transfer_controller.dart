@@ -119,51 +119,59 @@ class TransferController extends Notifier<TransferState> {
   }
 
   void markFileCompleted(int payloadId) async {
+    // Safety check: ensure payload exists
+    if (!_activePayloads.containsKey(payloadId) || !_payloadCachePaths.containsKey(payloadId)) {
+      return;
+    }
+
+    String fileName = _activePayloads[payloadId]!;
+    String cachePath = _payloadCachePaths[payloadId]!;
+    String finalDisplayPath = cachePath;
+
+    // --- 1. HANDLE FILE OPERATIONS ---
     if (state.role == TransferRole.receiver) {
-      if (_activePayloads.containsKey(payloadId) &&
-          _payloadCachePaths.containsKey(payloadId)) {
-        String fileName = _activePayloads[payloadId]!;
-        String cachePath = _payloadCachePaths[payloadId]!;
-
-        final finalPath = await FileService.moveFileToDownloads(
-          cachePath,
-          fileName,
-        );
-
-        CompletedFile newFile =
-            fileName.endsWith('.bhejde') ||
-                fileName.endsWith('.apk') ||
-                fileName.endsWith('.apks') ||
-                fileName.endsWith('.xapk')
-            ? CompletedAppFile(name: fileName, path: finalPath)
-            : CompletedFile(name: fileName, path: finalPath);
-
-        state = state.copyWith(
-          completedFiles: List.from(state.completedFiles)..add(newFile),
-        );
-      }
+      // Receiver moves file from cache to Downloads
+      finalDisplayPath = await FileService.moveFileToDownloads(
+        cachePath,
+        fileName,
+      );
     } else if (state.role == TransferRole.sender) {
-      if (_activePayloads.containsKey(payloadId) &&
-          _payloadCachePaths.containsKey(payloadId)) {
-        String fileName = _activePayloads[payloadId]!;
-
-        if (fileName.endsWith('.bhejde')) {
-          File(_payloadCachePaths[payloadId]!).deleteSync();
+      // Sender cleans up temporary bundle files
+      if (fileName.endsWith('.bhejde')) {
+        final tempFile = File(cachePath);
+        if (tempFile.existsSync()) {
+          tempFile.deleteSync();
         }
       }
     }
+
+    // --- 2. CREATE COMPLETED FILE OBJECT (For BOTH Sender & Receiver) ---
+    final isAppFile = fileName.endsWith('.bhejde') ||
+        fileName.endsWith('.apk') ||
+        fileName.endsWith('.apks') ||
+        fileName.endsWith('.xapk');
+
+    CompletedFile newFile = isAppFile
+        ? CompletedAppFile(name: fileName, path: finalDisplayPath)
+        : CompletedFile(name: fileName, path: finalDisplayPath);
+
+    // --- 3. CLEANUP TRACKING MAPS ---
     _activePayloads.remove(payloadId);
     _payloadCachePaths.remove(payloadId);
+
+    // --- 4. UPDATE STATE & PROGRESS ---
     int updatedCount = state.filesTransferred + 1;
 
-    if (updatedCount > state.totalFiles) {
+    if (updatedCount >= state.totalFiles) { 
       state = state.copyWith(
+        completedFiles: List.from(state.completedFiles)..add(newFile), 
         status: TransferStatus.completed,
         currentFileProgress: 1.0,
-        filesTransferred: state.totalFiles,
+        filesTransferred: updatedCount,
       );
     } else {
       state = state.copyWith(
+        completedFiles: List.from(state.completedFiles)..add(newFile), 
         filesTransferred: updatedCount,
         currentFileProgress: 0.0,
       );
