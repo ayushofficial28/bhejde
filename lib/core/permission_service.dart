@@ -43,11 +43,21 @@ class PermissionService {
     bool corePermissionsGranted = statuses.values.every((status) => status.isGranted);
     if (!corePermissionsGranted) return false;
     print('Requesting permissions for Android...');
+    
     // Handle Storage
     if (sdkInt >= 30) {
       var storageStatus = await Permission.manageExternalStorage.status;
       if (!storageStatus.isGranted) {
-        await Permission.manageExternalStorage.request(); 
+        // MINIMAL FIX 1: Reassign and check the result of the request
+        storageStatus = await Permission.manageExternalStorage.request(); 
+        if (!storageStatus.isGranted) {
+          return false; // User hit back without granting
+        }
+      }
+      
+      // MINIMAL FIX 2: Request Install permission for Android 11+
+      if (!await Permission.requestInstallPackages.isGranted) {
+        await Permission.requestInstallPackages.request();
       }
     } else {
       await [

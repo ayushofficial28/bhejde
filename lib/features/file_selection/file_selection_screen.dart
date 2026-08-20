@@ -17,7 +17,7 @@ class FileSelectionScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedFiles = ref.watch(selectedFilesProvider);
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Select Files to Share'),

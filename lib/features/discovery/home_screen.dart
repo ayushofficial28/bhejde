@@ -140,11 +140,28 @@ class HomeScreen extends ConsumerWidget {
                       icon: const Icon(Icons.arrow_upward),
                       label: const Text("SEND"),
                       onPressed: () async {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (context) => const FileSelectionScreen(),
-                          ),
-                        );
+                        bool granted =
+                            await PermissionService.requestPermissions();
+                        if (!granted) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Permissions required to connect!',
+                                ),
+                              ),
+                            );
+                          }
+                          return;
+                        }
+                        if(context.mounted){
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const FileSelectionScreen(),
+                            ),
+                          );
+                        }
+                        
                         // bool granted = await PermissionService.requestPermissions();
                         // if (granted) {
                         //   controller.startDiscovery();
