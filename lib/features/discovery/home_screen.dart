@@ -87,28 +87,28 @@ class HomeScreen extends ConsumerWidget {
               const Spacer(flex: 2),
 
               Container(
-                width: 130,
-                height: 130,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
+                  width: 240, // 👉 Increased size so the tagline is readable
+                  height: 240,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(40), // Slightly larger curve for a bigger image
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2), // Slightly stronger shadow
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: Image.asset(
+                      'assets/splash/splash.png', // 👉 Pointing to the full image
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-                child: Icon(
-                  Icons.offline_share_rounded,
-                  size: 65,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "BhejDe",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
+                
+                const SizedBox(height: 32),
               Text(
                 _getSubtitleText(state.status),
                 style: TextStyle(
@@ -161,8 +161,6 @@ class HomeScreen extends ConsumerWidget {
 
   String _getSubtitleText(ConnectionStatus status) {
     switch (status) {
-      case ConnectionStatus.idle:
-        return "Share files offline securely";
       case ConnectionStatus.discovering:
         return "Scanning nearby...";
       case ConnectionStatus.advertising:
