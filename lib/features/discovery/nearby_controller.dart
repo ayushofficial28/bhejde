@@ -186,19 +186,29 @@ class NearbyController extends StateNotifier<NearbyState> {
     }
   }
 
-  Future<void> stopAll() async {
+  Future<void> stopSearch() async {
     await Nearby().stopAdvertising();
     await Nearby().stopDiscovery();
-    await Nearby().stopAllEndpoints(); 
 
     state = state.copyWith(
       status: ConnectionStatus.idle, 
       discoveredPeers: {},
-      connectedEndpointId: null, 
       pendingEndpointId: null,   
       pendingEndpointName: null, 
     );
   }
+
+  Future<void> endConnection() async {
+    await Nearby().stopAllEndpoints();
+    state = state.copyWith(
+      status: ConnectionStatus.idle, 
+      connectedEndpointId: null, 
+      pendingEndpointId: null,   
+      pendingEndpointName: null, 
+      discoveredPeers: {},
+    );
+  }
+
 
   Future<void> stopDiscovery() async {
     try {

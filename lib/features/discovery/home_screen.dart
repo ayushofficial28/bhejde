@@ -55,7 +55,7 @@ class HomeScreen extends ConsumerWidget {
         // 2. If the user clicked "Exit"
         if (shouldExit == true) {
           // 👉 Clean up your nearby state completely
-          await ref.read(nearbyControllerProvider.notifier).stopAll();
+          await ref.read(nearbyControllerProvider.notifier).stopSearch();
           
           // 👉 Tell Android to cleanly close the app
           SystemNavigator.pop(); 
@@ -181,7 +181,7 @@ class HomeScreen extends ConsumerWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       onPressed: () {
-                        controller.stopAll();
+                        controller.stopSearch();
                       },
                     ),
                   ),

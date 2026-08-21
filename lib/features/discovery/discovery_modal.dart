@@ -49,7 +49,7 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
           _pathsToSend, // Use the extracted paths
         );
 
-        controller.stopAll(); 
+        controller.stopSearch(); 
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const TransferScreen()),
@@ -63,7 +63,7 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
-        await ref.read(nearbyControllerProvider.notifier).stopAll();
+        await ref.read(nearbyControllerProvider.notifier).stopSearch();
 
         if (context.mounted) {
           Navigator.of(context).pop();
@@ -190,7 +190,7 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                     shape: const StadiumBorder(),
                   ),
                   onPressed: () {
-                    controller.stopAll();
+                    controller.stopSearch();
                     Navigator.pop(context);
                   },
                   child: const Text("Cancel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),

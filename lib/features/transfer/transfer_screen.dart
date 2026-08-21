@@ -19,7 +19,7 @@ class TransferScreen extends ConsumerWidget {
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         
-        await ref.read(nearbyControllerProvider.notifier).stopAll();
+        await ref.read(nearbyControllerProvider.notifier).endConnection();
         
         if (context.mounted) {
           Navigator.of(context).popUntil((route) => route.isFirst);
@@ -39,7 +39,7 @@ class TransferScreen extends ConsumerWidget {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back_rounded),
             onPressed: () async {
-              await ref.read(nearbyControllerProvider.notifier).stopAll();
+              await ref.read(nearbyControllerProvider.notifier).endConnection();
               
               if (context.mounted) {
                 Navigator.of(context).popUntil((route) => route.isFirst);
