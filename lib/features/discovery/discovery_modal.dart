@@ -156,18 +156,6 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                               "Tap to connect",
                               style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
                             ),
-                            trailing: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.grey.shade50,
-                              ),
-                              padding: const EdgeInsets.all(8),
-                              child: Icon(
-                                Icons.send_rounded, 
-                                color: Theme.of(context).colorScheme.primary, 
-                                size: 20,
-                              ),
-                            ),
                             onTap: () {
                               controller.initiateConnection(endpointId);
                             },

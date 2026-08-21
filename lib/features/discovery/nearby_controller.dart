@@ -213,6 +213,13 @@ class NearbyController extends StateNotifier<NearbyState> {
     Nearby().stopAdvertising();
     Nearby().stopDiscovery();
     Nearby().stopAllEndpoints();
+    state = state.copyWith(
+      status: ConnectionStatus.idle, 
+      discoveredPeers: {},
+      connectedEndpointId: null, 
+      pendingEndpointId: null,   
+      pendingEndpointName: null, 
+    );
     super.dispose();
   }
 
