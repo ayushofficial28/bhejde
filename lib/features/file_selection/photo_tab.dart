@@ -46,7 +46,13 @@ class _PhotosTabState extends ConsumerState<PhotosTab> {
     final selectedFilesList = ref.watch(selectedFilesProvider);
 
     return photosAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          Text('Loading photos...'),
+        ],
+      )),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (photos) {
         if (photos.isEmpty) {

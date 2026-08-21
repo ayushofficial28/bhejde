@@ -14,7 +14,13 @@ class AppsTab extends ConsumerWidget {
     final selectedFiles = ref.watch(selectedFilesProvider);
 
     return appsAsyncValue.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          Text('Loading apps...'),
+        ],
+      )),
       error: (e, stack) => Center(child: Text('Error loading apps: $e')),
       data: (apps) {
         return GridView.builder(

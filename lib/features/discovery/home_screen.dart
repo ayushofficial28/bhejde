@@ -1,6 +1,7 @@
 import 'package:bhejde/features/file_selection/file_selection_screen.dart';
 import 'package:bhejde/features/transfer/transfer_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:apks_manager/apks_manager.dart';
@@ -27,130 +28,165 @@ class HomeScreen extends ConsumerWidget {
       }
     });
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldExit = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Exit BhejDe?'),
+            content: const Text('Are you sure you want to close the app?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Exit'),
+              ),
+            ],
+          ),
+        );
+
+        // 2. If the user clicked "Exit"
+        if (shouldExit == true) {
+          // 👉 Clean up your nearby state completely
+          await ref.read(nearbyControllerProvider.notifier).stopAll();
+          
+          // 👉 Tell Android to cleanly close the app
+          SystemNavigator.pop(); 
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        
+        appBar: AppBar(
+          title: const Text(
+            'BhejDe',
+            style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
       
-      appBar: AppBar(
-        title: const Text(
-          'BhejDe',
-          style: TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-      ),
-
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            UserAccountsDrawerHeader(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-              ),
-              accountName: Text(
-                currentDeviceName, // 👉 Display the dynamic name
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              accountEmail: const Text("Ready to connect"),
-              currentAccountPicture: const CircleAvatar(
-                backgroundColor: Colors.white,
-                child: Icon(Icons.person, size: 40, color: Colors.blue),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit_rounded),
-              title: const Text('Change Device Name'),
-              onTap: () {
-                Navigator.pop(context); 
-                _showEditNameDialog(context, ref);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.install_mobile_rounded),
-              title: const Text('Install APK'),
-              onTap: () {
-                Navigator.pop(context);
-                _handleInstallApp(context);
-              },
-            ),
-          ],
-        ),
-      ),
-
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Column(
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
             children: [
-              const Spacer(flex: 2),
-
-              Container(
-                width: 130,
-                height: 130,
+              UserAccountsDrawerHeader(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.offline_share_rounded,
-                  size: 65,
                   color: Theme.of(context).colorScheme.primary,
                 ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                "BhejDe",
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+                accountName: Text(
+                  currentDeviceName, // 👉 Display the dynamic name
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                accountEmail: const Text("Ready to connect"),
+                currentAccountPicture: const CircleAvatar(
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.person, size: 40, color: Colors.blue),
                 ),
               ),
-              const SizedBox(height: 8),
-              Text(
-                _getSubtitleText(state.status),
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
+              ListTile(
+                leading: const Icon(Icons.edit_rounded),
+                title: const Text('Change Device Name'),
+                onTap: () {
+                  Navigator.pop(context); 
+                  _showEditNameDialog(context, ref);
+                },
               ),
-
-              const Spacer(flex: 3),
-
-              if (state.status == ConnectionStatus.idle) ...[
-                _buildActionButtons(context, controller, ref),
-              ] else if (state.status == ConnectionStatus.advertising) ...[
-                _buildLoadingCard(context, "Waiting for sender to connect...", Icons.wifi_tethering),
-              ] else if (state.status == ConnectionStatus.waiting) ...[
-                _buildWaitingUI(state, controller),
-              ],
-
-              const Spacer(flex: 2),
-
-              if (state.status != ConnectionStatus.idle)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 24.0),
-                  child: OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: Colors.red,
-                      side: const BorderSide(color: Colors.red, width: 1.5),
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                      shape: const StadiumBorder(),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.install_mobile_rounded),
+                title: const Text('Install APK'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _handleInstallApp(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              children: [
+                const Spacer(flex: 2),
+      
+                // --- FULL SPLASH GRAPHIC (Logo + Text) ---
+                Container(
+                  width: 240, // 👉 Increased size so the tagline is readable
+                  height: 240,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(40), // Slightly larger curve for a bigger image
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2), // Slightly stronger shadow
+                        blurRadius: 30,
+                        offset: const Offset(0, 15),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: Image.asset(
+                      'assets/splash/splash.png', // 👉 Pointing to the full image
+                      fit: BoxFit.cover,
                     ),
-                    icon: const Icon(Icons.close_rounded),
-                    label: const Text(
-                      "Cancel Connection",
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    onPressed: () {
-                      controller.stopAll();
-                    },
                   ),
                 ),
-            ],
+                
+                const SizedBox(height: 32), // Extra padding before the buttons
+                Text(
+                  _getSubtitleText(state.status),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey.shade600,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+      
+                const Spacer(flex: 3),
+      
+                if (state.status == ConnectionStatus.idle) ...[
+                  _buildActionButtons(context, controller, ref),
+                ] else if (state.status == ConnectionStatus.advertising) ...[
+                  _buildLoadingCard(context, "Waiting for sender to connect...", Icons.wifi_tethering),
+                ] else if (state.status == ConnectionStatus.waiting) ...[
+                  _buildWaitingUI(state, controller),
+                ],
+      
+                const Spacer(flex: 2),
+      
+                if (state.status != ConnectionStatus.idle)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 24.0),
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Colors.red, width: 1.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        shape: const StadiumBorder(),
+                      ),
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text(
+                        "Cancel Connection",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      onPressed: () {
+                        controller.stopAll();
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -161,8 +197,6 @@ class HomeScreen extends ConsumerWidget {
 
   String _getSubtitleText(ConnectionStatus status) {
     switch (status) {
-      case ConnectionStatus.idle:
-        return "Share files offline securely";
       case ConnectionStatus.discovering:
         return "Scanning nearby...";
       case ConnectionStatus.advertising:
@@ -488,4 +522,6 @@ class HomeScreen extends ConsumerWidget {
         ),
       );
   }
+
+  
 }

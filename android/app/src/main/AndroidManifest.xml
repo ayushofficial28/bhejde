@@ -31,7 +31,7 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO"/>
     <application
-        android:label="bhejde"
+        android:label="BhejDe"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -57,7 +57,12 @@ class _VideosTabState extends ConsumerState<VideosTab> {
     final selectedFilesList = ref.watch(selectedFilesProvider);
 
     return videosAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [CircularProgressIndicator(), Text('Loading videos...')],
+        ),
+      ),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (videos) {
         if (videos.isEmpty) {

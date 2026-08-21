@@ -44,7 +44,13 @@ class _DocumentsTabState extends ConsumerState<DocumentsTab> {
     final selectedFilesList = ref.watch(selectedFilesProvider);
 
     return docsAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const Center(child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          Text('Loading documents...'),
+        ],
+      )),
       error: (err, stack) => Center(child: Text('Error: $err')),
       data: (docs) {
         if (docs.isEmpty) {
