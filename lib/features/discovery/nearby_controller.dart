@@ -63,15 +63,25 @@ class NearbyController extends StateNotifier<NearbyState> {
         },
         onConnectionResult: (id, status) {
           if (status == Status.CONNECTED) {
-            state = state.copyWith(status: ConnectionStatus.connected);
+            state = state.copyWith(status: ConnectionStatus.connected,
+              connectedEndpointId: id,
+              pendingEndpointId: null,
+              pendingEndpointName: null,
+            );
           } else {
-            state = state.copyWith(status: ConnectionStatus.idle);
+            state = state.copyWith(status: ConnectionStatus.idle,
+              pendingEndpointId: null,
+              pendingEndpointName: null,
+            );
           }
         },
         onDisconnected: (id) {
           state = state.copyWith(
             connectedEndpointId: null,
             status: ConnectionStatus.idle,
+            pendingEndpointId: null,
+            pendingEndpointName: null,
+            discoveredPeers: {}
           );
         },
       );
@@ -164,6 +174,7 @@ class NearbyController extends StateNotifier<NearbyState> {
             status: ConnectionStatus.idle,
             pendingEndpointId: null,
             pendingEndpointName: null,
+            discoveredPeers: {},
           );
         },
       );
@@ -178,7 +189,15 @@ class NearbyController extends StateNotifier<NearbyState> {
   Future<void> stopAll() async {
     await Nearby().stopAdvertising();
     await Nearby().stopDiscovery();
-    state = state.copyWith(status: ConnectionStatus.idle, discoveredPeers: {});
+    await Nearby().stopAllEndpoints(); 
+
+    state = state.copyWith(
+      status: ConnectionStatus.idle, 
+      discoveredPeers: {},
+      connectedEndpointId: null, 
+      pendingEndpointId: null,   
+      pendingEndpointName: null, 
+    );
   }
 
   Future<void> stopDiscovery() async {
