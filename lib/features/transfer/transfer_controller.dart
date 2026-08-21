@@ -178,11 +178,32 @@ class TransferController extends Notifier<TransferState> {
     }
   }
 
-  void markTransferError(String errorMessage) {
+  Future<void> markTransferError(String errorMessage) async {
+    // 1. Immediately update UI so the user sees the error
     state = state.copyWith(
       status: TransferStatus.error,
       errorMessage: errorMessage,
     );
+
+    // 2. Clean up storage in the background
+    for (String cachePath in _payloadCachePaths.values) {
+      try {
+        // If receiver: clean up partial files. If sender: clean up temp .bhejde bundles.
+        if (state.role == TransferRole.receiver || cachePath.endsWith('.bhejde')) {
+          final tempFile = File(cachePath);
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        }
+      } catch (e) {
+        print("Error cleaning up file $cachePath: $e");
+      }
+    }
+
+    // 3. Empty the queues so the next transfer starts fresh
+    _activePayloads.clear();
+    _incomingFileQueue.clear();
+    _payloadCachePaths.clear();
   }
 
   Future<void> installApp(String filePath) async {
