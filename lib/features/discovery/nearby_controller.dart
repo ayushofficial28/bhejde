@@ -17,7 +17,7 @@ final nearbyControllerProvider =
 class NearbyController extends StateNotifier<NearbyState> {
   final Ref ref;
   NearbyController(this.ref) : super(NearbyState());
-  final Strategy strategy = Strategy.P2P_POINT_TO_POINT;
+  final Strategy strategy = Strategy.P2P_STAR;
 
   Future<void> startDiscovery() async {
     String username = ref.read(deviceNameProvider);
