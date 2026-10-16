@@ -16,17 +16,40 @@ class DiscoveryModal extends ConsumerStatefulWidget {
 class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
   bool _isPreparingFiles = true;
   List<String> _pathsToSend = [];
+  bool _hardwareReady = false;
 
   @override
   void initState() {
     super.initState();
-    _prepareFilesAndStartDiscovery();
+    _checkHardware();
+  }
+
+  Future<void> _checkHardware() async {
+    final ready = await ref
+        .read(nearbyControllerProvider.notifier)
+        .checkHardwareRadios();
+
+    if (!mounted) return;
+
+    if (ready) {
+      setState(() {
+        _hardwareReady = true;
+      });
+
+      _prepareFilesAndStartDiscovery();
+    } else {
+      setState(() {
+        _hardwareReady = false;
+      });
+    }
   }
 
   Future<void> _prepareFilesAndStartDiscovery() async {
     ref.read(nearbyControllerProvider.notifier).startDiscovery();
-    _pathsToSend = await ref.read(selectedFilesProvider.notifier).getFinalPathsForTransfer();
-    
+    _pathsToSend = await ref
+        .read(selectedFilesProvider.notifier)
+        .getFinalPathsForTransfer();
+
     if (mounted) {
       setState(() {
         _isPreparingFiles = false;
@@ -36,20 +59,43 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_hardwareReady) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Turn on Wi-Fi, Bluetooth and Location to proceed',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _checkHardware,
+                child: const Text('Check Again'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
     final state = ref.watch(nearbyControllerProvider);
     final controller = ref.read(nearbyControllerProvider.notifier);
 
     // Listen for a successful connection (Logic preserved exactly)
     ref.listen<NearbyState>(nearbyControllerProvider, (previous, next) {
-      if (previous?.status != ConnectionStatus.connected && 
+      if (previous?.status != ConnectionStatus.connected &&
           next.status == ConnectionStatus.connected) {
-            
-        ref.read(transferControllerProvider.notifier).sendFiles(
-          next.connectedEndpointId!, 
-          _pathsToSend, // Use the extracted paths
-        );
+        ref
+            .read(transferControllerProvider.notifier)
+            .sendFiles(
+              next.connectedEndpointId!,
+              _pathsToSend, // Use the extracted paths
+            );
 
-        controller.stopSearch(); 
+        controller.stopSearch();
 
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (context) => const TransferScreen()),
@@ -59,14 +105,14 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
 
     // --- UI ENHANCEMENTS START HERE ---
     return PopScope(
-      canPop: false, 
+      canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
 
         await ref.read(nearbyControllerProvider.notifier).stopSearch();
 
         if (context.mounted) {
-          Navigator.of(context).pop();
+          Navigator.pop(context,true);
         }
       },
       child: Container(
@@ -91,29 +137,44 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Header
             const Text(
               "Select Receiver",
               style: TextStyle(
-                fontSize: 24, 
+                fontSize: 24,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0.5,
               ),
             ),
             const SizedBox(height: 20),
-            
+
             // Dynamic Status Card
             if (_isPreparingFiles) ...[
-              _buildStatusCard(context, "Preparing files...", Icons.folder_zip_rounded, Colors.purple),
+              _buildStatusCard(
+                context,
+                "Preparing files...",
+                Icons.folder_zip_rounded,
+                Colors.purple,
+              ),
             ] else if (state.status == ConnectionStatus.discovering) ...[
-              _buildStatusCard(context, "Scanning for nearby devices...", Icons.radar_rounded, Theme.of(context).colorScheme.primary),
+              _buildStatusCard(
+                context,
+                "Scanning for nearby devices...",
+                Icons.radar_rounded,
+                Theme.of(context).colorScheme.primary,
+              ),
             ] else if (state.status == ConnectionStatus.connecting) ...[
-              _buildStatusCard(context, "Connecting to ${state.pendingEndpointName}...", Icons.link_rounded, Colors.orange),
+              _buildStatusCard(
+                context,
+                "Connecting to ${state.pendingEndpointName}...",
+                Icons.link_rounded,
+                Colors.orange,
+              ),
             ],
-      
+
             const SizedBox(height: 16),
-            
+
             // The List of Available Devices
             if (!_isPreparingFiles)
               Expanded(
@@ -121,17 +182,23 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                     ? Center(
                         child: Text(
                           "Make sure the receiver is visible",
-                          style: TextStyle(color: Colors.grey.shade500, fontSize: 16),
+                          style: TextStyle(
+                            color: Colors.grey.shade500,
+                            fontSize: 16,
+                          ),
                         ),
                       )
                     : ListView.separated(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         itemCount: state.discoveredPeers.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(height: 12),
                         itemBuilder: (context, index) {
-                          String endpointId = state.discoveredPeers.keys.elementAt(index);
-                          String deviceName = state.discoveredPeers.values.elementAt(index);
-                          
+                          String endpointId = state.discoveredPeers.keys
+                              .elementAt(index);
+                          String deviceName = state.discoveredPeers.values
+                              .elementAt(index);
+
                           return Container(
                             decoration: BoxDecoration(
                               color: Colors.white,
@@ -142,30 +209,43 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                                   color: Colors.black.withOpacity(0.02),
                                   blurRadius: 8,
                                   offset: const Offset(0, 4),
-                                )
+                                ),
                               ],
                             ),
                             child: ListTile(
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                               leading: Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: Theme.of(context).colorScheme.primaryContainer,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.primaryContainer,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Icon(
-                                  Icons.phone_android_rounded, 
+                                  Icons.phone_android_rounded,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
                               ),
                               title: Text(
-                                deviceName, 
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                deviceName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
                               ),
                               subtitle: Text(
                                 "Tap to connect",
-                                style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 13,
+                                ),
                               ),
                               onTap: () {
                                 controller.initiateConnection(endpointId);
@@ -175,9 +255,9 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                         },
                       ),
               ),
-            
+
             const SizedBox(height: 16),
-      
+
             // Cancel Button
             SafeArea(
               child: SizedBox(
@@ -191,12 +271,15 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
                   ),
                   onPressed: () {
                     controller.stopSearch();
-                    Navigator.pop(context);
+                    Navigator.pop(context,true);
                   },
-                  child: const Text("Cancel", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    "Cancel",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
@@ -204,7 +287,12 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
   }
 
   // --- UI HELPER METHOD ---
-  Widget _buildStatusCard(BuildContext context, String text, IconData icon, Color color) {
+  Widget _buildStatusCard(
+    BuildContext context,
+    String text,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -228,7 +316,9 @@ class _DiscoveryModalState extends ConsumerState<DiscoveryModal> {
             child: Text(
               text,
               style: TextStyle(
-                color: color.withOpacity(0.8), // Adjusted for better text contrast
+                color: color.withOpacity(
+                  0.8,
+                ), // Adjusted for better text contrast
                 fontWeight: FontWeight.w600,
                 fontSize: 15,
               ),

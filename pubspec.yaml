@@ -49,6 +49,7 @@ dependencies:
   apks_manager: ^1.1.1
   flutter_device_name: ^0.0.3
   shared_preferences: ^2.5.5
+  receive_sharing_intent: 1.8.0
 
   
 

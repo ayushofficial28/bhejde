@@ -79,6 +79,8 @@ class FileSelectionScreen extends ConsumerWidget {
                 ),
               ),
               builder: (context) => const DiscoveryModal(),
+              isDismissible: false,
+              enableDrag: false,
             );
           }
         },
